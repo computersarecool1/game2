@@ -3,14 +3,15 @@ use bevy::{
     transform::commands,
 };
 mod health;
+mod modLevH;
 mod score;
-
-use crate::GameState::GamePlay;
+mod level2;
+use crate::{GameState::GamePlay, modLevH::{level, levelState::{self, levelEnd}}};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins((score::ScorePlugin, health::HealthPlugin))
+        .add_plugins((level2::level2Plugin,modLevH::MyLevelH,score::ScorePlugin, health::HealthPlugin))
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
         .add_systems(
@@ -24,17 +25,18 @@ fn main() {
             FixedUpdate,
             (
                 (
-                    update,
-                    mobs,
+                    update,(
+                    asteroid,
+                    bose,
+                    mobs).run_if(in_state(levelState::Inlevel)),
                     shootHit,
                     y_mobs,
                     despanw,
                     shoot,
                     hit,
-                    asteroid,
                     game_over.run_if(on_message::<Hit>),
                 )
-                    .run_if(in_state(GameState::GamePlay)),
+                    .run_if(in_state(GameState::GamePlay)).run_if(in_state(level::level1)),
                 (un_game_over_ui).run_if(in_state(GameState::GameOver)),
             ),
         )
@@ -45,7 +47,33 @@ fn main() {
 
 #[derive(Component)]
 
+pub struct Boss;
+#[derive(Component)]
+
 struct Asteroid;
+fn bose(
+    time: ResMut<Time>,
+    mut commands: Commands,
+    mut mesh: ResMut<Assets<Mesh>>,
+    mut mat: ResMut<Assets<ColorMaterial>>,
+) {
+    if (time.elapsed_secs() % 13. < time.delta_secs()) {
+        commands.spawn((
+            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
+            MeshMaterial2d(mat.add(Color::srgb(0.52_f32, 0.222_f32, 0.2_f32))),
+            Boss,
+            MobHealth(3),
+            Mob,
+            movey(5.),
+            Hostile,
+            Transform::from_translation(Vec3 {
+                x: rand::random_range(-600.0..=600.0),
+                y: 600.,
+                z: Default::default(),
+            }),
+        ));
+    }
+}
 
 fn asteroid(
     time: ResMut<Time>,
@@ -62,7 +90,7 @@ fn asteroid(
             Hostile,
             Transform::from_translation(Vec3 {
                 x: rand::random_range(-600.0..=600.0),
-                y: 23.,
+                y: 600.,
                 z: Default::default(),
             }),
         ));
@@ -190,9 +218,18 @@ struct Shoot;
 fn shootHit(
     mut commands: Commands,
     shoot: Query<(Entity, &Transform), With<Shoot>>,
-    hos: Query<(Entity, &Transform, Has<Asteroid>, Has<Mob>), With<Hostile>>,
+    mut hos: Query<
+        (
+            Entity,
+            &Transform,
+            Has<Asteroid>,
+            Has<Mob>,
+            Option<&mut MobHealth>,
+        ),
+        With<Hostile>,
+    >,
 ) {
-    for (mobEntity, hos, asteroid, mob) in hos {
+    for (mobEntity, hos, asteroid, mob, mut health) in hos {
         for shoot in shoot {
             if hos.translation.xy().distance(shoot.1.translation.xy()) <= 61. {
                 if asteroid {
@@ -200,14 +237,27 @@ fn shootHit(
                 };
                 if mob {
                     commands.trigger(score::ScoreEvent(1));
-                    commands.entity(mobEntity).despawn();
+                    match health {
+                        Some(ref mut a) => {
+                            a.0 = a.0 - 1;
+                            if a.0 == 0 {
+                                commands.entity(mobEntity).despawn();
+                            };
+                        }
+                        None => {
+                            commands.entity(mobEntity).despawn();
+                        }
+                    }
+
                     commands.entity(shoot.0).despawn();
                 }
             }
         }
     }
 }
+#[derive(Component)]
 
+struct MobHealth(i32);
 #[derive(Component)]
 
 struct Hostile;
@@ -265,7 +315,7 @@ fn mobs(
             Hostile,
             Transform::from_translation(Vec3 {
                 x: rand::random_range(-600.0..=600.0),
-                y: 23.,
+                y: 600.,
                 z: Default::default(),
             }),
         ));
