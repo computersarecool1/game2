@@ -23,7 +23,13 @@ impl Plugin for MyLevelH {
     fn build(&self, app: &mut App) {
         app.init_state::<level>();
         app.init_state::<levelState>();
-        app.add_systems(FixedUpdate, (startnew.run_if(in_state(levelState::levelEnd)),changlevel.run_if(in_state(levelState::Inlevel))));
+        app.add_systems(
+            FixedUpdate,
+            (
+                startnew.run_if(in_state(levelState::levelEnd)),
+                changlevel.run_if(in_state(levelState::Inlevel)),
+            ),
+        );
     }
 }
 
@@ -31,8 +37,15 @@ fn changlevel(
     sl: Res<State<levelState>>,
     mut n: ResMut<NextState<levelState>>,
     s: Res<crate::score::Score>,
+    c: Res<State<level>>,
 ) {
-    if s.0 >= 2 {
+    let endScore = match c {
+        level::level1 => 2,
+        level::level2 => 5,
+        _ => 0,
+    };
+
+    if s.0 >= endScore {
         NextState::set_if_neq(&mut n, levelState::levelEnd);
     }
 }
@@ -44,7 +57,6 @@ fn startnew(
     mut commands: Commands,
 ) {
     if query.is_empty() {
-        
         NextState::set_if_neq(&mut n, levelState::levelStart);
         NextState::set_if_neq(&mut n2, level::level2);
     };
