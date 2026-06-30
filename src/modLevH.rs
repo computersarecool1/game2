@@ -39,7 +39,7 @@ fn changlevel(
     s: Res<crate::score::Score>,
     c: Res<State<level>>,
 ) {
-    let endScore = match c {
+    let endScore = match **c {
         level::level1 => 2,
         level::level2 => 5,
         _ => 0,

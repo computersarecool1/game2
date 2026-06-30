@@ -3,15 +3,27 @@ use bevy::{
     transform::commands,
 };
 mod health;
+mod level1;
+mod level2;
 mod modLevH;
 mod score;
-mod level2;
-use crate::{GameState::GamePlay, modLevH::{level, levelState::{self, levelEnd}}};
-
+use crate::{
+    GameState::GamePlay, modLevH::{
+        level,
+        levelState::{self, levelEnd},
+    }, score::Score,
+};
+#[derive(Event, Message)]
+struct Restart;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins((level2::level2Plugin,modLevH::MyLevelH,score::ScorePlugin, health::HealthPlugin))
+        .add_plugins((
+            level2::level2Plugin,
+            modLevH::MyLevelH,
+            score::ScorePlugin,
+            health::HealthPlugin,
+        )).add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
         .add_systems(
@@ -24,23 +36,18 @@ fn main() {
         .add_systems(
             FixedUpdate,
             (
-                (
-                    update,(
-                    asteroid,
-                    bose,
-                    mobs).run_if(in_state(levelState::Inlevel)),
-                    shootHit,
-                    y_mobs,
-                    despanw,
-                    shoot,
-                    hit,
-                    game_over.run_if(on_message::<Hit>),
-                )
-                    .run_if(in_state(GameState::GamePlay)).run_if(in_state(level::level1)),
+               
+                shootHit,
+                hit,
+                despanw,
+                (game_over,start_deSpawnMobs).run_if(on_message::<Hit>),
+                (restart, start).chain().run_if(on_message::<Restart>),
                 (un_game_over_ui).run_if(in_state(GameState::GameOver)),
             ),
         )
         .add_message::<Hit>()
+                .add_message::<Restart>()
+
         .init_state::<GameState>()
         .run();
 }
@@ -51,73 +58,24 @@ pub struct Boss;
 #[derive(Component)]
 
 struct Asteroid;
-fn bose(
-    time: ResMut<Time>,
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
+
+fn restart(
+    mut gs: ResMut<NextState<GameState>>,
+    mut ls: ResMut<NextState<levelState>>,
+    mut l: ResMut<NextState<level>>,
+   mut score: ResMut<Score>,
+   query: Query<Entity,Or<(With<Transform>, With<Text>)>>,
+   mut commands: Commands,
 ) {
-    if (time.elapsed_secs() % 13. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0.52_f32, 0.222_f32, 0.2_f32))),
-            Boss,
-            MobHealth(3),
-            Mob,
-            movey(5.),
-            Hostile,
-            Transform::from_translation(Vec3 {
-                x: rand::random_range(-600.0..=600.0),
-                y: 600.,
-                z: Default::default(),
-            }),
-        ));
-    }
+    score.0 = 0;
+    NextState::set_if_neq(&mut gs, GameState::GamePlay);
+    NextState::set_if_neq(&mut ls, levelState::Inlevel);
+    NextState::set_if_neq(&mut l, level::level1);
+    for query in query {
+        commands.entity(query).try_despawn();
+    };
 }
 
-fn asteroid(
-    time: ResMut<Time>,
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-) {
-    if (time.elapsed_secs() % 1. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(22_f32, 22_f32, 22_f32))),
-            Asteroid,
-            movey(5.),
-            Hostile,
-            Transform::from_translation(Vec3 {
-                x: rand::random_range(-600.0..=600.0),
-                y: 600.,
-                z: Default::default(),
-            }),
-        ));
-    }
-}
-
-fn shoot(
-    mut commands: Commands,
-    query: Single<(&Transform), With<Pla>>,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-    mut click: Res<ButtonInput<MouseButton>>,
-) {
-    if click.just_pressed(MouseButton::Left) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
-            movey(-7.),
-            Shoot,
-            Transform::from_translation(Vec3 {
-                x: query.translation.x,
-                y: -333.,
-                z: Default::default(),
-            }),
-        ));
-    }
-}
 #[derive(Component)]
 
 struct Mob;
@@ -174,12 +132,16 @@ fn start_deSpawnMobs(mut commands: Commands, query: Query<Entity, (With<movey>)>
 struct retrybutttonText;
 fn un_game_over_ui(
     mut s: ResMut<NextState<GameState>>,
+    mut ss: ResMut<NextState<level>>,mut mes: MessageWriter<Restart>,
+
     mut color: Single<&mut TextColor, With<retrybutttonText>>,
     mut interaction_query: Query<(Entity, &Interaction), (With<ReButton>, Changed<Interaction>)>,
 ) {
     for (e, interaction) in interaction_query {
         match interaction {
-            Interaction::Pressed => NextState::set_if_neq(&mut s, GameState::GamePlay),
+            Interaction::Pressed => {
+               mes.write(Restart);
+            }
             Interaction::Hovered => color.0 = Color::srgb(0.5, 0.5, 0.5),
             Interaction::None => color.0 = Color::default(),
 
@@ -285,48 +247,8 @@ fn hit(
         }
     }
 }
-fn update(
-    main: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
-    mut mes_pos: MessageReader<CursorMoved>,
-    mut pla_transform: Query<(&mut Transform), With<Pla>>,
-) {
-    let (camera, cam_transform) = main.into_inner();
-    for mes in mes_pos.read() {
-        for mut pla_transform in &mut pla_transform {
-            if let Ok(pos) = camera.viewport_to_world_2d(cam_transform, mes.position) {
-                pla_transform.translation.x = pos.x;
-            }
-        }
-    }
-}
 
-fn mobs(
-    time: ResMut<Time>,
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-) {
-    if (time.elapsed_secs() % 2. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(255_f32, 0_f32, 0_f32))),
-            Mob,
-            movey(4.),
-            Hostile,
-            Transform::from_translation(Vec3 {
-                x: rand::random_range(-600.0..=600.0),
-                y: 600.,
-                z: Default::default(),
-            }),
-        ));
-    }
-}
 
-fn y_mobs(mut query: Query<(&mut Transform, &movey)>) {
-    for (mut y, speed) in &mut query {
-        y.translation.y -= speed.0;
-    }
-}
 
 fn despanw(query: Query<(&Transform, Entity, Has<Mob>), With<movey>>, mut commands: Commands) {
     for (y, e, mob) in query {
