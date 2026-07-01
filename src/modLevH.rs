@@ -20,7 +20,7 @@ impl level {
         match self {
             level::level1 => level::level2,
             level::level2 => level::level3,
-            level::level3 => level::level1,
+            level::level3 => todo!(),
         }
     }
 }
@@ -68,8 +68,8 @@ fn startnew(
     query: Query<Entity, Or<(With<Mob>, With<Boss>, With<Asteroid>)>>,
     mut commands: Commands,
 ) {
-    if query.is_empty() {
+if query.is_empty() {
         NextState::set_if_neq(&mut n, levelState::levelStart);
         NextState::set_if_neq(&mut n2, level.next());
-    };
+   };
 }

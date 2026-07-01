@@ -14,11 +14,15 @@ impl Plugin for level2Plugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            ((
-                (bose, mobs, shoot, y_mobs).run_if(in_state(level::level2)),
+            (((
                 x.run_if(in_state(levelState::levelStart)),
-                rotate,
-            )),
+                rotate,(
+                bose,
+                mobs,).run_if(in_state(levelState::Inlevel)),
+                shoot,
+                y_mobs,
+            )
+                .run_if(in_state(level::level2)),)),
         );
     }
 }
@@ -128,7 +132,7 @@ fn x(mut n: ResMut<NextState<levelState>>, mut t: Single<(Entity, &mut Transform
         t.1.translation += d * 0.04;
     }
 
-    if t.1.translation.xy() == (0., 0.).into() {
+    if t.1.translation.xy().as_ivec2() == IVec2::ZERO {
         NextState::set_if_neq(&mut n, levelState::Inlevel);
     }
 }

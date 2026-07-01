@@ -156,7 +156,15 @@ fn un_game_over_ui(
 
 #[derive(Component)]
 struct movey(f32);
-
+impl Pla {
+    pub fn default_pos() -> Vec3 {
+        Vec3 {
+            x: Default::default(),
+            y: -333.,
+            z: Default::default(),
+        }
+    }
+}
 #[derive(Component)]
 
 struct Pla;
@@ -170,11 +178,7 @@ fn start(
         Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
         MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
         Pla,
-        Transform::from_translation(Vec3 {
-            x: Default::default(),
-            y: -333.,
-            z: Default::default(),
-        }),
+        Transform::from_translation(Pla::default_pos()),
     ));
 }
 

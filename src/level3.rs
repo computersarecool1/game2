@@ -1,22 +1,22 @@
 use bevy::prelude::*;
 
 use crate::{
-    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
-    modLevH::{level, levelState},
-    movey,
+    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot, modLevH::{level::{self, level1}, levelState}, movey,
 };
 
 pub(crate) struct MyLevel3Plugin;
 
 impl Plugin for MyLevel3Plugin {
     fn build(&self, app: &mut App) {
+                
         app.add_systems(
             FixedUpdate,
             (
-                update,
-                (asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                
+                (update,asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
                 shoot,
+                x.run_if(in_state(levelState::levelStart)),
             )
                 .run_if(in_state(GameState::GamePlay))
                 .run_if(in_state(level::level3)),
@@ -129,5 +129,19 @@ fn shoot(
                 z: Default::default(),
             }),
         ));
+    }
+}
+fn x(mut n: ResMut<NextState<levelState>>, mut t: Single<(Entity, &mut Transform), With<Pla>>) {
+    let center = Pla::default_pos();
+
+    if t.1.translation.xy() != (Pla::default_pos().xy()) {
+        println!("dddddddd");
+        let d = center - t.1.translation;
+        t.1.translation += d * 0.04;
+    }
+
+    if 1. >= Pla::default_pos().xy().distance(t.1.translation.xy()) {
+        NextState::set_if_neq(&mut n, levelState::Inlevel);
+        t.1.rotation = Quat::default();
     }
 }
