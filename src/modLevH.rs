@@ -15,8 +15,16 @@ pub enum levelState {
     levelEnd,
 }
 use bevy::prelude::*;
-
-use crate::{Asteroid, Boss, Mob};
+impl level {
+    pub fn next(&self) -> level {
+        match self {
+            level::level1 => level::level2,
+            level::level2 => level::level3,
+            level::level3 => level::level1,
+        }
+    }
+}
+use crate::{Asteroid, Boss, Mob, level1};
 
 pub(crate) struct MyLevelH;
 
@@ -53,6 +61,8 @@ fn changlevel(
 }
 
 fn startnew(
+    level: Res<State<level>>,
+
     mut n2: ResMut<NextState<level>>,
     mut n: ResMut<NextState<levelState>>,
     query: Query<Entity, Or<(With<Mob>, With<Boss>, With<Asteroid>)>>,
@@ -60,6 +70,6 @@ fn startnew(
 ) {
     if query.is_empty() {
         NextState::set_if_neq(&mut n, levelState::levelStart);
-        NextState::set_if_neq(&mut n2, level::level2);
+        NextState::set_if_neq(&mut n2, level.next());
     };
 }

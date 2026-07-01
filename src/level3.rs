@@ -33,7 +33,7 @@ fn bose(
     if (time.elapsed_secs() % 13. < time.delta_secs()) {
         commands.spawn((
             Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0.52_f32, 0.222_f32, 0.2_f32))),
+            MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
             Boss,
             MobHealth(3),
             Mob,
@@ -57,7 +57,7 @@ fn asteroid(
     if (time.elapsed_secs() % 1. < time.delta_secs()) {
         commands.spawn((
             Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(22_f32, 22_f32, 22_f32))),
+            MeshMaterial2d(mat.add(Color::srgb(22_f32, 92_f32, 22_f32))),
             Asteroid,
             movey(5.),
             Hostile,
