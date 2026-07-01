@@ -5,6 +5,8 @@ pub enum level {
     #[default]
     level1,
     level2,
+    level3,
+
 }
 #[derive(States, Clone, Debug, Default, Hash, PartialEq, Eq)]
 pub enum levelState {
@@ -42,6 +44,7 @@ fn changlevel(
     let endScore = match **c {
         level::level1 => 2,
         level::level2 => 5,
+        level::level3 => 8,
         _ => 0,
     };
 

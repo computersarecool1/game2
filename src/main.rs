@@ -5,6 +5,7 @@ use bevy::{
 mod health;
 mod level1;
 mod level2;
+mod level3;
 mod modLevH;
 mod score;
 use crate::{
@@ -20,6 +21,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             level2::level2Plugin,
+            level3::MyLevel3Plugin,
             modLevH::MyLevelH,
             score::ScorePlugin,
             health::HealthPlugin,
