@@ -6,7 +6,6 @@ pub enum level {
     level1,
     level2,
     level3,
-
 }
 #[derive(States, Clone, Debug, Default, Hash, PartialEq, Eq)]
 pub enum levelState {

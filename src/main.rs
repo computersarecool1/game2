@@ -9,10 +9,12 @@ mod level3;
 mod modLevH;
 mod score;
 use crate::{
-    GameState::GamePlay, modLevH::{
+    GameState::GamePlay,
+    modLevH::{
         level,
         levelState::{self, levelEnd},
-    }, score::Score,
+    },
+    score::Score,
 };
 #[derive(Event, Message)]
 struct Restart;
@@ -25,7 +27,8 @@ fn main() {
             modLevH::MyLevelH,
             score::ScorePlugin,
             health::HealthPlugin,
-        )).add_plugins(level1::MyLevel1Plugin)
+        ))
+        .add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
         .add_systems(
@@ -38,18 +41,16 @@ fn main() {
         .add_systems(
             FixedUpdate,
             (
-               
                 shootHit,
                 hit,
                 despanw,
-                (game_over,start_deSpawnMobs).run_if(on_message::<Hit>),
+                (game_over, start_deSpawnMobs).run_if(on_message::<Hit>),
                 (restart, start).chain().run_if(on_message::<Restart>),
                 (un_game_over_ui).run_if(in_state(GameState::GameOver)),
             ),
         )
         .add_message::<Hit>()
-                .add_message::<Restart>()
-
+        .add_message::<Restart>()
         .init_state::<GameState>()
         .run();
 }
@@ -65,9 +66,9 @@ fn restart(
     mut gs: ResMut<NextState<GameState>>,
     mut ls: ResMut<NextState<levelState>>,
     mut l: ResMut<NextState<level>>,
-   mut score: ResMut<Score>,
-   query: Query<Entity,Or<(With<Transform>, With<Text>)>>,
-   mut commands: Commands,
+    mut score: ResMut<Score>,
+    query: Query<Entity, Or<(With<Transform>, With<Text>)>>,
+    mut commands: Commands,
 ) {
     score.0 = 0;
     NextState::set_if_neq(&mut gs, GameState::GamePlay);
@@ -75,7 +76,7 @@ fn restart(
     NextState::set_if_neq(&mut l, level::level1);
     for query in query {
         commands.entity(query).try_despawn();
-    };
+    }
 }
 
 #[derive(Component)]
@@ -134,7 +135,8 @@ fn start_deSpawnMobs(mut commands: Commands, query: Query<Entity, (With<movey>)>
 struct retrybutttonText;
 fn un_game_over_ui(
     mut s: ResMut<NextState<GameState>>,
-    mut ss: ResMut<NextState<level>>,mut mes: MessageWriter<Restart>,
+    mut ss: ResMut<NextState<level>>,
+    mut mes: MessageWriter<Restart>,
 
     mut color: Single<&mut TextColor, With<retrybutttonText>>,
     mut interaction_query: Query<(Entity, &Interaction), (With<ReButton>, Changed<Interaction>)>,
@@ -142,7 +144,7 @@ fn un_game_over_ui(
     for (e, interaction) in interaction_query {
         match interaction {
             Interaction::Pressed => {
-               mes.write(Restart);
+                mes.write(Restart);
             }
             Interaction::Hovered => color.0 = Color::srgb(0.5, 0.5, 0.5),
             Interaction::None => color.0 = Color::default(),
@@ -249,8 +251,6 @@ fn hit(
         }
     }
 }
-
-
 
 fn despanw(query: Query<(&Transform, Entity, Has<Mob>), With<movey>>, mut commands: Commands) {
     for (y, e, mob) in query {

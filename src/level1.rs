@@ -1,23 +1,28 @@
 use bevy::prelude::*;
 
-use crate::{Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot, modLevH::{level, levelState}, movey};
+use crate::{
+    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    modLevH::{level, levelState},
+    movey,
+};
 
 pub(crate) struct MyLevel1Plugin;
 
 impl Plugin for MyLevel1Plugin {
-fn build(&self, app: &mut App) {
-app.add_systems(FixedUpdate,  (
-                    update,
-                    (asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
-                    y_mobs,
-                    shoot,
-                )
-                    .run_if(in_state(GameState::GamePlay))
-                    .run_if(in_state(level::level1)),);
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            FixedUpdate,
+            (
+                update,
+                (asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                y_mobs,
+                shoot,
+            )
+                .run_if(in_state(GameState::GamePlay))
+                .run_if(in_state(level::level1)),
+        );
+    }
 }
-}
-
-
 
 fn bose(
     time: ResMut<Time>,
@@ -104,7 +109,6 @@ fn mobs(
         ));
     }
 }
-
 
 fn shoot(
     mut commands: Commands,
