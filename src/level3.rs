@@ -1,21 +1,27 @@
+use avian2d::parry::query;
 use bevy::prelude::*;
 
 use crate::{
-    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot, modLevH::{level::{self, level1}, levelState}, movey,
+    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    modLevH::{
+        level::{self, level1},
+        levelState,
+    },
+    movey,
 };
 
 pub(crate) struct MyLevel3Plugin;
 
 impl Plugin for MyLevel3Plugin {
     fn build(&self, app: &mut App) {
-                
         app.add_systems(
             FixedUpdate,
             (
-                
-                (update,asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                (update, asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
                 shoot,
+                spawnSpaseShip,
+                moveSpaseShip,
                 x.run_if(in_state(levelState::levelStart)),
             )
                 .run_if(in_state(GameState::GamePlay))
@@ -23,7 +29,55 @@ impl Plugin for MyLevel3Plugin {
         );
     }
 }
+#[derive(Component)]
+struct shipPart;
+fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipPart>>) {
+    for mut query in query {
+        query.translation.y -= 4.;
+    }
+}
+fn spawnSpaseShip(
+    mut mat: ResMut<Assets<ColorMaterial>>,
+    mut mesh: ResMut<Assets<Mesh>>,
+    mut commands: Commands,
+    mut query: Query<&mut Transform, With<shipPart>>,
+) {
+    if query.iter().all(|a| a.translation.y < 700.) {
+        println!("spawnSpaseShip");
+        commands.spawn((shipRect(&mut mat, &mut mesh, -300., 800., 61., 401.)));
+        commands.spawn((shipRect(&mut mat, &mut mesh, 300., 800., 61., 401.)));
+        commands.spawn(
+            (shipRect(
+                &mut mat,
+                &mut mesh,
+                rand::random_range(300.0..=500.0) * if rand::random_bool(0.5) { 1. } else { -1. },
+                1000.,
+                700.,
+                100.,
+            )),
+        );
+    };
+}
 
+fn shipRect(
+    mut mat: &mut ResMut<Assets<ColorMaterial>>,
+    mut mesh: &mut ResMut<Assets<Mesh>>,
+    x: f32,
+    y: f32,
+    width: f32,
+    hight: f32,
+) -> impl Bundle {
+    (
+        Mesh2d(mesh.add(Rectangle::new(width, hight))),
+        MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
+        shipPart,
+        Transform::from_translation(Vec3 {
+            x: x,
+            y: y,
+            z: Default::default(),
+        }),
+    )
+}
 fn bose(
     time: ResMut<Time>,
     mut commands: Commands,

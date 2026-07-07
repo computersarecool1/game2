@@ -2,6 +2,7 @@ use bevy::{
     ecs::query, log::tracing_subscriber::fmt::format, math::NormedVectorSpace, prelude::*,
     transform::commands,
 };
+mod debug;
 mod health;
 mod level1;
 mod level2;
@@ -10,6 +11,7 @@ mod modLevH;
 mod score;
 use crate::{
     GameState::GamePlay,
+    debug::DebugPlugin,
     modLevH::{
         level,
         levelState::{self, levelEnd},
@@ -28,6 +30,7 @@ fn main() {
             score::ScorePlugin,
             health::HealthPlugin,
         ))
+        .add_plugins(DebugPlugin)
         .add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)

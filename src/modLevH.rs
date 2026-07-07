@@ -68,8 +68,8 @@ fn startnew(
     query: Query<Entity, Or<(With<Mob>, With<Boss>, With<Asteroid>)>>,
     mut commands: Commands,
 ) {
-if query.is_empty() {
+    if query.is_empty() {
         NextState::set_if_neq(&mut n, levelState::levelStart);
         NextState::set_if_neq(&mut n2, level.next());
-   };
+    };
 }
