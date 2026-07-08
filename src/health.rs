@@ -1,5 +1,7 @@
 use bevy::{prelude::*, state::commands};
 
+use crate::GameState;
+
 pub(crate) struct HealthPlugin;
 
 impl Plugin for HealthPlugin {
@@ -14,7 +16,7 @@ impl Plugin for HealthPlugin {
         .add_systems(FixedUpdate, health)
         .init_resource::<Health>()
         .add_observer(on_unhealth_event)
-        .add_systems(Startup, startup)
+        .add_systems(OnEnter(GameState::GamePlay), startup)
         .add_systems(
             FixedUpdate,
             update_health.run_if(resource_exists_and_changed::<Health>),
