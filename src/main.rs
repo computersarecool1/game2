@@ -1,13 +1,16 @@
+use avian2d::prelude::*;
 use bevy::{
     ecs::query, log::tracing_subscriber::fmt::format, math::NormedVectorSpace, prelude::*,
     transform::commands,
 };
+#[cfg(debug_assertions)]
 mod debug;
 mod health;
 mod level1;
 mod level2;
 mod level3;
 mod modLevH;
+mod physics;
 mod score;
 use crate::{
     GameState::GamePlay,
@@ -16,6 +19,7 @@ use crate::{
         level,
         levelState::{self, levelEnd},
     },
+    physics::GameLayer,
     score::Score,
 };
 #[derive(Event, Message)]
@@ -30,7 +34,11 @@ fn main() {
             score::ScorePlugin,
             health::HealthPlugin,
         ))
-        .add_plugins(DebugPlugin)
+        .add_plugins(physics::physicsPlugin)
+        .add_plugins(
+            #[cfg(debug_assertions)]
+            DebugPlugin,
+        )
         .add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
@@ -45,9 +53,8 @@ fn main() {
             FixedUpdate,
             (
                 shootHit,
-                hit,
                 despanw,
-                (game_over, start_deSpawnMobs).run_if(on_message::<Hit>),
+                (game_over, start_deSpawnMobs).run_if(on_message::<Hit>.or(on_message::<GameOver>)),
                 (restart, start).chain().run_if(on_message::<Restart>),
                 (un_game_over_ui).run_if(in_state(GameState::GameOver)),
             ),
@@ -55,6 +62,7 @@ fn main() {
         .add_message::<Hit>()
         .add_message::<Restart>()
         .init_state::<GameState>()
+        .add_message::<GameOver>()
         .run();
 }
 
@@ -83,6 +91,10 @@ fn restart(
 }
 
 #[derive(Component)]
+#[require(
+    Collider::rectangle(71., 71.),
+    CollisionLayers::new(GameLayer::Mob, GameLayer::Player)
+)]
 
 struct Mob;
 #[derive(Resource, Component)]
@@ -96,6 +108,10 @@ enum GameState {
     #[default]
     GamePlay,
 }
+
+#[derive(Default, Message)]
+pub struct GameOver;
+
 #[derive(Event, Message)]
 struct Hit {
     hit: Entity,
@@ -169,7 +185,7 @@ impl Pla {
     }
 }
 #[derive(Component)]
-
+#[require(Collider::rectangle(71., 71.))]
 struct Pla;
 fn start(
     mut commands: Commands,
@@ -181,6 +197,11 @@ fn start(
         Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
         MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
         Pla,
+        RigidBody::Kinematic,
+        CollisionLayers::new(
+            GameLayer::Player,
+            [GameLayer::Mob, GameLayer::Asteroid, GameLayer::ShipPart],
+        ),
         Transform::from_translation(Pla::default_pos()),
     ));
 }

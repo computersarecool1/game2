@@ -1,4 +1,4 @@
-use avian2d::parry::query;
+use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
@@ -8,6 +8,7 @@ use crate::{
         levelState,
     },
     movey,
+    physics::GameLayer,
 };
 
 pub(crate) struct MyLevel3Plugin;
@@ -71,6 +72,9 @@ fn shipRect(
         Mesh2d(mesh.add(Rectangle::new(width, hight))),
         MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
         shipPart,
+        RigidBody::Static,
+        CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Player]),
+        Collider::rectangle(width, hight),
         Transform::from_translation(Vec3 {
             x: x,
             y: y,
