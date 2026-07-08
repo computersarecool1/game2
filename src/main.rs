@@ -43,13 +43,6 @@ fn main() {
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
         .add_systems(
-            OnTransition {
-                entered: GameState::GamePlay,
-                exited: GameState::GameOver,
-            },
-            start_deSpawnMobs,
-        )
-        .add_systems(
             FixedUpdate,
             (
                 shootHit,
