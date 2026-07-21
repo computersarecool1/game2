@@ -1,9 +1,11 @@
+use avian2d::collision::collider::CollisionLayers;
 use bevy::prelude::*;
 
 use crate::{
     Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
     modLevH::{level, levelState},
     movey,
+    physics::GameLayer,
 };
 
 pub(crate) struct MyLevel1Plugin;
@@ -60,6 +62,7 @@ fn asteroid(
             MeshMaterial2d(mat.add(Color::srgb(22_f32, 22_f32, 22_f32))),
             Asteroid,
             movey(5.),
+            CollisionLayers::new(GameLayer::Asteroid, [GameLayer::Player]),
             Hostile,
             Transform::from_translation(Vec3 {
                 x: rand::random_range(-600.0..=600.0),

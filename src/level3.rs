@@ -18,7 +18,7 @@ impl Plugin for MyLevel3Plugin {
         app.add_systems(
             FixedUpdate,
             (
-                (update, asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                (update, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
                 shoot,
                 spawnSpaseShip,
@@ -31,7 +31,7 @@ impl Plugin for MyLevel3Plugin {
     }
 }
 #[derive(Component)]
-struct shipPart;
+pub struct shipPart;
 fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipPart>>) {
     for mut query in query {
         query.translation.y -= 4.;
@@ -73,7 +73,7 @@ fn shipRect(
         MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
         shipPart,
         RigidBody::Static,
-        CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Player]),
+        CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Bullet, GameLayer::Player]),
         Collider::rectangle(width, hight),
         Transform::from_translation(Vec3 {
             x: x,
@@ -106,27 +106,6 @@ fn bose(
     }
 }
 
-fn asteroid(
-    time: ResMut<Time>,
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-) {
-    if (time.elapsed_secs() % 1. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(22_f32, 92_f32, 22_f32))),
-            Asteroid,
-            movey(5.),
-            Hostile,
-            Transform::from_translation(Vec3 {
-                x: rand::random_range(-600.0..=600.0),
-                y: 600.,
-                z: Default::default(),
-            }),
-        ));
-    }
-}
 fn update(
     main: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
     mut mes_pos: MessageReader<CursorMoved>,

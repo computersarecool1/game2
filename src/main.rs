@@ -15,6 +15,7 @@ mod score;
 use crate::{
     GameState::GamePlay,
     debug::DebugPlugin,
+    level3::shipPart,
     modLevH::{
         level,
         levelState::{self, levelEnd},
@@ -63,7 +64,7 @@ fn main() {
 
 pub struct Boss;
 #[derive(Component)]
-
+#[require(Collider::rectangle(71., 71.), CollisionLayers::new(GameLayer::Asteroid, [GameLayer::ShipPart,GameLayer::Player,GameLayer::Bullet]),RigidBody::Kinematic)]
 struct Asteroid;
 
 fn restart(
@@ -86,7 +87,9 @@ fn restart(
 #[derive(Component)]
 #[require(
     Collider::rectangle(71., 71.),
-    CollisionLayers::new(GameLayer::Mob, GameLayer::Player)
+    CollisionLayers::new(GameLayer::Mob, [GameLayer::Player,GameLayer::Bullet]),
+    RigidBody::Kinematic,
+
 )]
 
 struct Mob;
@@ -200,9 +203,16 @@ fn start(
 }
 
 #[derive(Component)]
+#[require(
+    Collider::rectangle(71., 71.),
+    CollisionLayers::new(GameLayer::Bullet, [GameLayer::ShipPart,GameLayer::Mob,GameLayer::Asteroid]),
+    RigidBody::Kinematic,
 
+)]
 struct Shoot;
 fn shootHit(
+    collisions: Collisions,
+
     mut commands: Commands,
     shoot: Query<(Entity, &Transform), With<Shoot>>,
     mut hos: Query<
@@ -211,14 +221,17 @@ fn shootHit(
             &Transform,
             Has<Asteroid>,
             Has<Mob>,
+            Has<shipPart>,
             Option<&mut MobHealth>,
         ),
         With<Hostile>,
     >,
 ) {
-    for (mobEntity, hos, asteroid, mob, mut health) in hos {
-        for shoot in shoot {
-            if hos.translation.xy().distance(shoot.1.translation.xy()) <= 61. {
+    for shoot in shoot {
+        let x = collisions.entities_colliding_with(shoot.0);
+        println!("{:?}", x.collect::<Vec<_>>());
+        for inpac in collisions.entities_colliding_with(shoot.0) {
+            if let Ok((e, p, asteroid, mob, ship, mut health)) = hos.get_mut(inpac) {
                 if asteroid {
                     commands.entity(shoot.0).despawn();
                 };
@@ -228,11 +241,11 @@ fn shootHit(
                         Some(ref mut a) => {
                             a.0 = a.0 - 1;
                             if a.0 == 0 {
-                                commands.entity(mobEntity).despawn();
+                                commands.entity(e).despawn();
                             };
                         }
                         None => {
-                            commands.entity(mobEntity).despawn();
+                            commands.entity(e).despawn();
                         }
                     }
 

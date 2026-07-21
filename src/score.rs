@@ -11,7 +11,6 @@ impl Plugin for ScorePlugin {
             },
             reSetScore,
         )
-        .add_systems(FixedUpdate, score)
         .init_resource::<Score>()
         .add_observer(on_score_event);
     }
@@ -23,9 +22,7 @@ pub struct Score(pub(crate) i32);
 #[derive(Event)]
 
 pub struct ScoreEvent(pub i32);
-fn score(mut score: ResMut<Score>, mut time: Res<Time>) {
-    println!("{:?}", score.0)
-}
+
 fn on_score_event(event: On<ScoreEvent>, mut score: ResMut<Score>) {
     score.0 += event.0;
 }
