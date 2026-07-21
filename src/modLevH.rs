@@ -24,7 +24,7 @@ impl level {
         }
     }
 }
-use crate::{Asteroid, Boss, Mob, level1};
+use crate::{Asteroid, Mob, enemmey::Boss, level1};
 
 pub(crate) struct MyLevelH;
 

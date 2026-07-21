@@ -1,11 +1,16 @@
-use avian2d::collision::collider::CollisionLayers;
+use avian2d::{
+    collision::collider::{Collider, CollisionLayers},
+    dynamics::rigid_body::RigidBody,
+};
 use bevy::prelude::*;
 
 use crate::{
-    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    GameState,
+    enemmey::{Boss, Hostile, Mob, MobHealth},
     modLevH::{level, levelState},
     movey,
     physics::GameLayer,
+    pla::{Pla, Shoot},
 };
 
 pub(crate) struct MyLevel1Plugin;
@@ -62,7 +67,6 @@ fn asteroid(
             MeshMaterial2d(mat.add(Color::srgb(22_f32, 22_f32, 22_f32))),
             Asteroid,
             movey(5.),
-            CollisionLayers::new(GameLayer::Asteroid, [GameLayer::Player]),
             Hostile,
             Transform::from_translation(Vec3 {
                 x: rand::random_range(-600.0..=600.0),
@@ -86,6 +90,10 @@ fn update(
         }
     }
 }
+#[derive(Component)]
+#[require(Collider::rectangle(71., 71.), CollisionLayers::new(GameLayer::Asteroid, [GameLayer::ShipPart,GameLayer::Player,GameLayer::Bullet]),RigidBody::Kinematic)]
+pub struct Asteroid;
+
 fn y_mobs(mut query: Query<(&mut Transform, &movey)>) {
     for (mut y, speed) in &mut query {
         y.translation.y -= speed.0;

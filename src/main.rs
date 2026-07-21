@@ -5,24 +5,33 @@ use bevy::{
 };
 #[cfg(debug_assertions)]
 mod debug;
+mod enemmey;
 mod health;
 mod level1;
 mod level2;
 mod level3;
 mod modLevH;
 mod physics;
+mod pla;
 mod score;
 use crate::{
     GameState::GamePlay,
     debug::DebugPlugin,
+    enemmey::{Hostile, Mob, MobHealth},
+    level1::Asteroid,
     level3::shipPart,
     modLevH::{
         level,
         levelState::{self, levelEnd},
     },
     physics::GameLayer,
+    pla::{Hit, Pla, Shoot, start},
     score::Score,
 };
+fn speedUPTime(real_time: Res<Time<Real>>, mut name: ResMut<Time<Virtual>>) {
+    let a = name.relative_speed() + 0.03 * real_time.delta_secs();
+    name.set_relative_speed(a);
+}
 #[derive(Event, Message)]
 struct Restart;
 fn main() {
@@ -48,8 +57,11 @@ fn main() {
             (
                 shootHit,
                 despanw,
+                speedUPTime,
                 (game_over, start_deSpawnMobs).run_if(on_message::<Hit>.or(on_message::<GameOver>)),
-                (restart, start).chain().run_if(on_message::<Restart>),
+                (resetSpeedUPTime, restart, start)
+                    .chain()
+                    .run_if(on_message::<Restart>),
                 (un_game_over_ui).run_if(in_state(GameState::GameOver)),
             ),
         )
@@ -59,14 +71,9 @@ fn main() {
         .add_message::<GameOver>()
         .run();
 }
-
-#[derive(Component)]
-
-pub struct Boss;
-#[derive(Component)]
-#[require(Collider::rectangle(71., 71.), CollisionLayers::new(GameLayer::Asteroid, [GameLayer::ShipPart,GameLayer::Player,GameLayer::Bullet]),RigidBody::Kinematic)]
-struct Asteroid;
-
+fn resetSpeedUPTime(real_time: Res<Time<Real>>, mut name: ResMut<Time<Virtual>>) {
+    name.set_relative_speed(1.);
+}
 fn restart(
     mut gs: ResMut<NextState<GameState>>,
     mut ls: ResMut<NextState<levelState>>,
@@ -84,20 +91,6 @@ fn restart(
     }
 }
 
-#[derive(Component)]
-#[require(
-    Collider::rectangle(71., 71.),
-    CollisionLayers::new(GameLayer::Mob, [GameLayer::Player,GameLayer::Bullet]),
-    RigidBody::Kinematic,
-
-)]
-
-struct Mob;
-#[derive(Resource, Component)]
-struct P {
-    x: i32,
-    y: i32,
-}
 #[derive(States, Clone, Debug, Default, Hash, PartialEq, Eq)]
 enum GameState {
     GameOver,
@@ -108,10 +101,6 @@ enum GameState {
 #[derive(Default, Message)]
 pub struct GameOver;
 
-#[derive(Event, Message)]
-struct Hit {
-    hit: Entity,
-}
 fn game_over(mut s: ResMut<NextState<GameState>>) {
     NextState::set_if_neq(&mut s, GameState::GameOver);
 }
@@ -171,61 +160,20 @@ fn un_game_over_ui(
 
 #[derive(Component)]
 struct movey(f32);
-impl Pla {
-    pub fn default_pos() -> Vec3 {
-        Vec3 {
-            x: Default::default(),
-            y: -333.,
-            z: Default::default(),
-        }
-    }
-}
-#[derive(Component)]
-#[require(Collider::rectangle(71., 71.))]
-struct Pla;
-fn start(
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-) {
-    commands.spawn(Camera2d);
-    commands.spawn((
-        Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-        MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
-        Pla,
-        RigidBody::Kinematic,
-        CollisionLayers::new(
-            GameLayer::Player,
-            [GameLayer::Mob, GameLayer::Asteroid, GameLayer::ShipPart],
-        ),
-        Transform::from_translation(Pla::default_pos()),
-    ));
-}
 
-#[derive(Component)]
-#[require(
-    Collider::rectangle(71., 71.),
-    CollisionLayers::new(GameLayer::Bullet, [GameLayer::ShipPart,GameLayer::Mob,GameLayer::Asteroid]),
-    RigidBody::Kinematic,
-
-)]
-struct Shoot;
 fn shootHit(
     collisions: Collisions,
 
     mut commands: Commands,
     shoot: Query<(Entity, &Transform), With<Shoot>>,
-    mut hos: Query<
-        (
-            Entity,
-            &Transform,
-            Has<Asteroid>,
-            Has<Mob>,
-            Has<shipPart>,
-            Option<&mut MobHealth>,
-        ),
-        With<Hostile>,
-    >,
+    mut hos: Query<(
+        Entity,
+        &Transform,
+        Has<Asteroid>,
+        Has<Mob>,
+        Has<shipPart>,
+        Option<&mut MobHealth>,
+    )>,
 ) {
     for shoot in shoot {
         let x = collisions.entities_colliding_with(shoot.0);
@@ -233,6 +181,11 @@ fn shootHit(
         for inpac in collisions.entities_colliding_with(shoot.0) {
             if let Ok((e, p, asteroid, mob, ship, mut health)) = hos.get_mut(inpac) {
                 if asteroid {
+                    commands.entity(shoot.0).despawn();
+                };
+                println!("{}, {}, {}, {}", e, asteroid, mob, ship);
+                if ship {
+                    println!("aaaaaggggggggggggeeeeeeeeeee");
                     commands.entity(shoot.0).despawn();
                 };
                 if mob {
@@ -255,12 +208,7 @@ fn shootHit(
         }
     }
 }
-#[derive(Component)]
 
-struct MobHealth(i32);
-#[derive(Component)]
-
-struct Hostile;
 fn hit(
     pla_transform: Query<(&Transform), With<Pla>>,
     mob_transform: Query<(&Transform, Entity), With<Hostile>>,

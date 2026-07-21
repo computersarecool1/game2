@@ -2,7 +2,8 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    Asteroid, Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    Asteroid, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    enemmey::Boss,
     modLevH::{
         level::{self, level1},
         levelState,
@@ -45,14 +46,14 @@ fn spawnSpaseShip(
 ) {
     if query.iter().all(|a| a.translation.y < 700.) {
         println!("spawnSpaseShip");
-        commands.spawn((shipRect(&mut mat, &mut mesh, -300., 800., 61., 401.)));
-        commands.spawn((shipRect(&mut mat, &mut mesh, 300., 800., 61., 401.)));
+        commands.spawn((shipRect(&mut mat, &mut mesh, -300., 800., 61., 451.)));
+        commands.spawn((shipRect(&mut mat, &mut mesh, 300., 800., 61., 451.)));
         commands.spawn(
             (shipRect(
                 &mut mat,
                 &mut mesh,
                 rand::random_range(300.0..=500.0) * if rand::random_bool(0.5) { 1. } else { -1. },
-                1000.,
+                1120.,
                 700.,
                 100.,
             )),
@@ -72,7 +73,7 @@ fn shipRect(
         Mesh2d(mesh.add(Rectangle::new(width, hight))),
         MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
         shipPart,
-        RigidBody::Static,
+        RigidBody::Kinematic,
         CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Bullet, GameLayer::Player]),
         Collider::rectangle(width, hight),
         Transform::from_translation(Vec3 {

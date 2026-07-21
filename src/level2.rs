@@ -3,7 +3,8 @@ use std::f32::consts::PI;
 use bevy::{log::Level, prelude::*};
 
 use crate::{
-    Boss, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    GameState, Hostile, Mob, MobHealth, Pla, Shoot,
+    enemmey::Boss,
     modLevH::{level, levelState},
     movey,
 };
@@ -16,9 +17,8 @@ impl Plugin for level2Plugin {
             FixedUpdate,
             (((
                 x.run_if(in_state(levelState::levelStart)),
-                rotate,(
-                bose,
-                mobs,).run_if(in_state(levelState::Inlevel)),
+                rotate,
+                (bose, mobs).run_if(in_state(levelState::Inlevel)),
                 shoot,
                 y_mobs,
             )
