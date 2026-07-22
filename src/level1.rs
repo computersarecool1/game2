@@ -4,14 +4,7 @@ use avian2d::{
 };
 use bevy::prelude::*;
 
-use crate::{
-    GameState,
-    enemmey::{Boss, Hostile, Mob, MobHealth},
-    modLevH::{level, levelState},
-    movey,
-    physics::GameLayer,
-    pla::{Pla, Shoot},
-};
+use crate::{GameState, enemmey::*, modLevH::*, movey, physics::GameLayer, pla::*};
 
 pub(crate) struct MyLevel1Plugin;
 
@@ -31,26 +24,17 @@ impl Plugin for MyLevel1Plugin {
     }
 }
 
-fn bose(
-    time: ResMut<Time>,
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-) {
+fn bose(time: ResMut<Time>, mut commands: Commands, handle: Res<ImageHandles>) {
     if (time.elapsed_secs() % 13. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0.52_f32, 0.222_f32, 0.2_f32))),
-            Boss,
-            MobHealth(3),
-            Mob,
-            movey(5.),
-            Hostile,
-            Transform::from_translation(Vec3 {
+        commands.spawn(Boss::bundle(
+            handle,
+            5.,
+            Vec3 {
                 x: rand::random_range(-600.0..=600.0),
                 y: 600.,
                 z: Default::default(),
-            }),
+            },
+            Default::default(),
         ));
     }
 }
@@ -104,19 +88,18 @@ fn mobs(
     mut commands: Commands,
     mut mesh: ResMut<Assets<Mesh>>,
     mut mat: ResMut<Assets<ColorMaterial>>,
+    handle: Res<ImageHandles>,
 ) {
     if (time.elapsed_secs() % 2. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(255_f32, 0_f32, 0_f32))),
-            Mob,
-            movey(4.),
-            Hostile,
-            Transform::from_translation(Vec3 {
+        commands.spawn(Mob::bundle(
+            handle,
+            4.,
+            Vec3 {
                 x: rand::random_range(-600.0..=600.0),
                 y: 600.,
                 z: Default::default(),
-            }),
+            },
+            Default::default(),
         ));
     }
 }

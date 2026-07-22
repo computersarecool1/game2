@@ -4,7 +4,7 @@ use bevy::{log::Level, prelude::*};
 
 use crate::{
     GameState, Hostile, Mob, MobHealth, Pla, Shoot,
-    enemmey::Boss,
+    enemmey::{Boss, ImageHandles, Mobhandle},
     modLevH::{level, levelState},
     movey,
 };
@@ -55,25 +55,13 @@ fn bose(
     mut commands: Commands,
     mut mesh: ResMut<Assets<Mesh>>,
     mut mat: ResMut<Assets<ColorMaterial>>,
+    handle: Res<ImageHandles>,
 ) {
     let pos =
         Quat::from_rotation_z(rand::random_range(PI..=PI * 2.)).mul_vec3(Vec3::new(0., 500., 0.));
     let rotate_to_pla = Quat::from_rotation_arc(Vec3::Y, (t.1.translation - pos).normalize());
     if (time.elapsed_secs() % 13. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0.52_f32, 0.222_f32, 0.2_f32))),
-            Boss,
-            MobHealth(3),
-            Mob,
-            movey(-5.),
-            Hostile,
-            Transform {
-                translation: pos,
-                rotation: rotate_to_pla,
-                ..Default::default()
-            },
-        ));
+        commands.spawn(Boss::bundle(handle, -5., pos, rotate_to_pla));
     }
 }
 fn mobs(
@@ -82,23 +70,14 @@ fn mobs(
     mut mesh: ResMut<Assets<Mesh>>,
     mut mat: ResMut<Assets<ColorMaterial>>,
     mut t: Single<(Entity, &mut Transform), With<Pla>>,
+    mut asset: ResMut<AssetServer>,
+    handle: Res<ImageHandles>,
 ) {
     if (time.elapsed_secs() % 2. < time.delta_secs()) {
         let pos = Quat::from_rotation_z(rand::random_range(PI..=PI * 2.))
             .mul_vec3(Vec3::new(0., 500., 0.));
         let rotate_to_pla = Quat::from_rotation_arc(Vec3::Y, (t.1.translation - pos).normalize());
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(255_f32, 0_f32, 0_f32))),
-            Mob,
-            movey(-4.),
-            Hostile,
-            Transform {
-                translation: pos,
-                rotation: rotate_to_pla,
-                ..Default::default()
-            },
-        ));
+        commands.spawn(Mob::bundle(handle, -4., pos, rotate_to_pla));
     }
 }
 fn y_mobs(mut query: Query<(&mut Transform, &movey)>) {

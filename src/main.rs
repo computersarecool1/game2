@@ -17,7 +17,7 @@ mod score;
 use crate::{
     GameState::GamePlay,
     debug::DebugPlugin,
-    enemmey::{Hostile, Mob, MobHealth},
+    enemmey::{Hostile, ImageHandles, Mob, MobHealth, Mobhandle},
     level1::Asteroid,
     level3::shipPart,
     modLevH::{
@@ -69,11 +69,13 @@ fn main() {
         .add_message::<Restart>()
         .init_state::<GameState>()
         .add_message::<GameOver>()
+        .init_resource::<ImageHandles>()
         .run();
 }
 fn resetSpeedUPTime(real_time: Res<Time<Real>>, mut name: ResMut<Time<Virtual>>) {
     name.set_relative_speed(1.);
 }
+
 fn restart(
     mut gs: ResMut<NextState<GameState>>,
     mut ls: ResMut<NextState<levelState>>,

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::{
     Asteroid, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
-    enemmey::Boss,
+    enemmey::{Boss, ImageHandles, Mobhandle},
     modLevH::{
         level::{self, level1},
         levelState,
@@ -46,14 +46,14 @@ fn spawnSpaseShip(
 ) {
     if query.iter().all(|a| a.translation.y < 700.) {
         println!("spawnSpaseShip");
-        commands.spawn((shipRect(&mut mat, &mut mesh, -300., 800., 61., 451.)));
-        commands.spawn((shipRect(&mut mat, &mut mesh, 300., 800., 61., 451.)));
+        commands.spawn((shipRect(&mut mat, &mut mesh, -300., 800., 61., 12. * Mob::SIZE.x)));
+        commands.spawn((shipRect(&mut mat, &mut mesh, 300., 800., 61., 12. * Mob::SIZE.x)));
         commands.spawn(
             (shipRect(
                 &mut mat,
                 &mut mesh,
                 rand::random_range(300.0..=500.0) * if rand::random_bool(0.5) { 1. } else { -1. },
-                1120.,
+                16. * Mob::SIZE.y,
                 700.,
                 100.,
             )),
@@ -88,21 +88,18 @@ fn bose(
     mut commands: Commands,
     mut mesh: ResMut<Assets<Mesh>>,
     mut mat: ResMut<Assets<ColorMaterial>>,
+    handle: Res<ImageHandles>,
 ) {
     if (time.elapsed_secs() % 13. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
-            Boss,
-            MobHealth(3),
-            Mob,
-            movey(5.),
-            Hostile,
-            Transform::from_translation(Vec3 {
+        commands.spawn(Boss::bundle(
+            handle,
+            5.,
+            Vec3 {
                 x: rand::random_range(-600.0..=600.0),
                 y: 600.,
                 z: Default::default(),
-            }),
+            },
+            Default::default(),
         ));
     }
 }
@@ -127,23 +124,21 @@ fn y_mobs(mut query: Query<(&mut Transform, &movey)>) {
     }
 }
 fn mobs(
+    handle: Res<ImageHandles>,
     time: ResMut<Time>,
     mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
+    mut asset: ResMut<AssetServer>,
 ) {
     if (time.elapsed_secs() % 2. < time.delta_secs()) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(255_f32, 0_f32, 0_f32))),
-            Mob,
-            movey(4.),
-            Hostile,
-            Transform::from_translation(Vec3 {
+        commands.spawn(Mob::bundle(
+            handle,
+            4.,
+            Vec3 {
                 x: rand::random_range(-600.0..=600.0),
                 y: 600.,
                 z: Default::default(),
-            }),
+            },
+            Default::default(),
         ));
     }
 }
