@@ -1,8 +1,14 @@
 use avian2d::{
     collision::collider::{Collider, CollisionLayers},
     dynamics::rigid_body::RigidBody,
+    math::PI,
 };
-use bevy::prelude::*;
+use bevy::{
+    asset::RenderAssetUsages,
+    color::palettes::css::GREY,
+    mesh::{Indices, PrimitiveTopology},
+    prelude::*,
+};
 
 use crate::{GameState, enemmey::*, modLevH::*, movey, physics::GameLayer, pla::*};
 
@@ -43,12 +49,40 @@ fn asteroid(
     time: ResMut<Time>,
     mut commands: Commands,
     mut mesh: ResMut<Assets<Mesh>>,
+    handle: Res<ImageHandles>,
     mut mat: ResMut<Assets<ColorMaterial>>,
 ) {
+    let mut asteroid_shaper = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::RENDER_WORLD,
+    );
+    let mut points = vec![[0., 0., 0.]];
+    let mut vecr = vec![];
+    let mut mutVec = vec![];
+    let n_points = 12;
+    for i in 0..n_points {
+        let angle = 2. * PI / (n_points as f32) * i as f32;
+        let distance = rand::random_range(20.0..=35.0);
+        points.push([distance * angle.cos(), distance * angle.sin(), 0.]);
+        vecr.push([angle.cos(), angle.sin()]);
+    }
+    for i in 2..(n_points + 1) {
+        mutVec.push(0);
+        mutVec.push(i);
+        mutVec.push(i - 1);
+    }
+    mutVec.push(0);
+    mutVec.push(n_points);
+    mutVec.push(1);
+    asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
+    asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_UV_0, vecr);
+
+    asteroid_shaper.insert_indices(Indices::U32(mutVec));
+
     if (time.elapsed_secs() % 1. < time.delta_secs()) {
         commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(22_f32, 22_f32, 22_f32))),
+            Mesh2d(mesh.add(asteroid_shaper)),
+            MeshMaterial2d(mat.add(handle.asteroid.clone())),
             Asteroid,
             movey(5.),
             Hostile,

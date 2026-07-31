@@ -18,6 +18,7 @@ use bevy::{
 pub struct ImageHandles {
     pub mob: Handle<Image>,
     pub boss: Handle<Image>,
+    pub asteroid: Handle<Image>,
 }
 
 impl FromWorld for ImageHandles {
@@ -26,6 +27,7 @@ impl FromWorld for ImageHandles {
         Self {
             mob: asset_server.load("mob.png"),
             boss: asset_server.load("boss.png"),
+            asteroid: asset_server.load("asteroid.png"),
         }
     }
 }
