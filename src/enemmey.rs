@@ -49,13 +49,9 @@ impl Boss {
             Boss,
             MobHealth(3),
             Mob,
-            movey(5.),
+            movey(y),
             Hostile,
-            Transform::from_translation(Vec3 {
-                x: rand::random_range(-600.0..=600.0),
-                y: 600.,
-                z: Default::default(),
-            }),
+            Transform::from_translation(pos).with_rotation(rot),
         ))
     }
 }
