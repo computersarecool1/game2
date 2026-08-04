@@ -12,6 +12,7 @@ use crate::{
     physics::GameLayer,
 };
 const WALL_SPACING: f32 = 300.;
+const Spawn_high: f32 = 550.;
 pub(crate) struct MyLevel3Plugin;
 
 impl Plugin for MyLevel3Plugin {
@@ -39,15 +40,18 @@ fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipP
 }
 
 fn get_spawn(mut q: Query<(&Transform, &ColliderAabb), With<shipPart>>) -> (f32, f32) {
-    let mut low = -WALL_SPACING + 45.;
-    let mut high = WALL_SPACING - 45.;
+    let mut low = -WALL_SPACING + Mob::SIZE.x;
+    let mut high = WALL_SPACING - Mob::SIZE.x;
+    println!("fornew");
     for s in q {
-        if (600.).distance(s.0.translation.y) > 250. {
+        if (Spawn_high).distance(s.0.translation.y) < 250. {
+            println!("found");
             if s.0.translation.x < 0. {
                 low = low.max(s.1.max.x)
             } else {
                 high = high.min(s.1.min.x)
             };
+            println!("{} {}", low, high)
         }
     }
     return (low, high);
@@ -57,14 +61,16 @@ fn spawnSpaseShip(
     mut mesh: ResMut<Assets<Mesh>>,
     mut commands: Commands,
     mut query: Query<&mut Transform, With<shipPart>>,
+    mut img: Res<AssetServer>,
 ) {
-    if query.iter().all(|a| a.translation.y < 700.) {
+    if query.iter().all(|a| a.translation.y < Spawn_high) {
         commands.spawn(
             (shipRect(
                 &mut mat,
                 &mut mesh,
+                &mut img,
                 -WALL_SPACING,
-                800.,
+                Spawn_high + 200.,
                 61.,
                 12. * Mob::SIZE.x,
             )),
@@ -73,8 +79,9 @@ fn spawnSpaseShip(
             (shipRect(
                 &mut mat,
                 &mut mesh,
+                &mut img,
                 WALL_SPACING,
-                800.,
+                Spawn_high + 200.,
                 61.,
                 12. * Mob::SIZE.x,
             )),
@@ -83,8 +90,9 @@ fn spawnSpaseShip(
             (shipRect(
                 &mut mat,
                 &mut mesh,
+                &mut img,
                 rand::random_range(300.0..=500.0) * if rand::random_bool(0.5) { 1. } else { -1. },
-                16. * Mob::SIZE.y,
+                Spawn_high + 10. * Mob::SIZE.y,
                 700.,
                 100.,
             )),
@@ -95,6 +103,7 @@ fn spawnSpaseShip(
 fn shipRect(
     mut mat: &mut ResMut<Assets<ColorMaterial>>,
     mut mesh: &mut ResMut<Assets<Mesh>>,
+    mut img: &mut Res<AssetServer>,
     x: f32,
     y: f32,
     width: f32,
@@ -102,7 +111,7 @@ fn shipRect(
 ) -> impl Bundle {
     (
         Mesh2d(mesh.add(Rectangle::new(width, hight))),
-        MeshMaterial2d(mat.add(Color::srgb(0.72_f32, 0.222_f32, 0.2_f32))),
+        MeshMaterial2d(mat.add(img.load("asteroid.png"))),
         shipPart,
         RigidBody::Kinematic,
         CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Bullet, GameLayer::Player]),
@@ -132,7 +141,7 @@ fn bose(
             5.,
             Vec3 {
                 x: rand::random_range(low..=high),
-                y: 600.,
+                y: Spawn_high,
                 z: Default::default(),
             },
             Default::default(),
@@ -176,7 +185,7 @@ fn mobs(
             4.,
             Vec3 {
                 x: rand::random_range(low..=high),
-                y: 600.,
+                y: Spawn_high,
                 z: Default::default(),
             },
             Default::default(),
