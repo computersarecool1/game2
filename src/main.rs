@@ -25,7 +25,7 @@ use crate::{
         levelState::{self, levelEnd},
     },
     physics::GameLayer,
-    pla::{Hit, Pla, Shoot, start},
+    pla::{Hit, Pla, Shoot, shoot, start},
     score::Score,
 };
 fn speedUPTime(real_time: Res<Time<Real>>, mut name: ResMut<Time<Virtual>>) {
@@ -52,6 +52,7 @@ fn main() {
         .add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
+        .add_systems(Update, shoot)
         .add_systems(
             FixedUpdate,
             (
@@ -177,17 +178,18 @@ fn shootHit(
         Option<&mut MobHealth>,
     )>,
 ) {
+    //  println!("{}", shoot.iter().len());
     for shoot in shoot {
         let x = collisions.entities_colliding_with(shoot.0);
-        println!("{:?}", x.collect::<Vec<_>>());
+        // println!("{:?}", x.collect::<Vec<_>>());
         for inpac in collisions.entities_colliding_with(shoot.0) {
             if let Ok((e, p, asteroid, mob, ship, mut health)) = hos.get_mut(inpac) {
                 if asteroid {
                     commands.entity(shoot.0).despawn();
                 };
-                println!("{}, {}, {}, {}", e, asteroid, mob, ship);
+
+                // println!("{}, {}, {}, {}", e, asteroid, mob, ship);
                 if ship {
-                    println!("aaaaaggggggggggggeeeeeeeeeee");
                     commands.entity(shoot.0).despawn();
                 };
                 if mob {
@@ -205,6 +207,7 @@ fn shootHit(
                     }
 
                     commands.entity(shoot.0).despawn();
+                    //  println!("ddd");
                 }
             }
         }

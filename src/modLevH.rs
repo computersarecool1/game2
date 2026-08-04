@@ -51,7 +51,7 @@ fn changlevel(
     let endScore = match **c {
         level::level1 => 2,
         level::level2 => 5,
-        level::level3 => 8,
+        level::level3 => 558,
         _ => 0,
     };
 

@@ -19,33 +19,10 @@ impl Plugin for level2Plugin {
                 x.run_if(in_state(levelState::levelStart)),
                 rotate,
                 (bose, mobs).run_if(in_state(levelState::Inlevel)),
-                shoot,
                 y_mobs,
             )
                 .run_if(in_state(level::level2)),)),
         );
-    }
-}
-
-fn shoot(
-    mut commands: Commands,
-    query: Single<(&Transform), With<Pla>>,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-    mut click: Res<ButtonInput<MouseButton>>,
-) {
-    if click.just_pressed(MouseButton::Left) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
-            movey(-7.),
-            Shoot,
-            Transform {
-                translation: query.translation,
-                rotation: query.rotation,
-                ..Default::default()
-            },
-        ));
     }
 }
 
@@ -106,7 +83,6 @@ fn x(mut n: ResMut<NextState<levelState>>, mut t: Single<(Entity, &mut Transform
     let center = Vec3::new(0., 0., 0.);
 
     if t.1.translation.xy() != (0., 0.).into() {
-        println!("dddddddd");
         let d = center - t.1.translation;
         t.1.translation += d * 0.04;
     }

@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{math::NormedVectorSpace, prelude::*};
 
 use crate::{
     Asteroid, GameState, Hostile, Mob, MobHealth, Pla, Shoot,
@@ -11,7 +11,7 @@ use crate::{
     movey,
     physics::GameLayer,
 };
-
+const WALL_SPACING: f32 = 300.;
 pub(crate) struct MyLevel3Plugin;
 
 impl Plugin for MyLevel3Plugin {
@@ -21,7 +21,6 @@ impl Plugin for MyLevel3Plugin {
             (
                 (update, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
-                shoot,
                 spawnSpaseShip,
                 moveSpaseShip,
                 x.run_if(in_state(levelState::levelStart)),
@@ -38,6 +37,21 @@ fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipP
         query.translation.y -= 4.;
     }
 }
+
+fn get_spawn(mut q: Query<(&Transform, &ColliderAabb), With<shipPart>>) -> (f32, f32) {
+    let mut low = -WALL_SPACING + 45.;
+    let mut high = WALL_SPACING - 45.;
+    for s in q {
+        if (600.).distance(s.0.translation.y) > 250. {
+            if s.0.translation.x < 0. {
+                low = low.max(s.1.max.x)
+            } else {
+                high = high.min(s.1.min.x)
+            };
+        }
+    }
+    return (low, high);
+}
 fn spawnSpaseShip(
     mut mat: ResMut<Assets<ColorMaterial>>,
     mut mesh: ResMut<Assets<Mesh>>,
@@ -45,9 +59,26 @@ fn spawnSpaseShip(
     mut query: Query<&mut Transform, With<shipPart>>,
 ) {
     if query.iter().all(|a| a.translation.y < 700.) {
-        println!("spawnSpaseShip");
-        commands.spawn((shipRect(&mut mat, &mut mesh, -300., 800., 61., 12. * Mob::SIZE.x)));
-        commands.spawn((shipRect(&mut mat, &mut mesh, 300., 800., 61., 12. * Mob::SIZE.x)));
+        commands.spawn(
+            (shipRect(
+                &mut mat,
+                &mut mesh,
+                -WALL_SPACING,
+                800.,
+                61.,
+                12. * Mob::SIZE.x,
+            )),
+        );
+        commands.spawn(
+            (shipRect(
+                &mut mat,
+                &mut mesh,
+                WALL_SPACING,
+                800.,
+                61.,
+                12. * Mob::SIZE.x,
+            )),
+        );
         commands.spawn(
             (shipRect(
                 &mut mat,
@@ -89,13 +120,18 @@ fn bose(
     mut mesh: ResMut<Assets<Mesh>>,
     mut mat: ResMut<Assets<ColorMaterial>>,
     handle: Res<ImageHandles>,
+    mut q: Query<(&Transform, &ColliderAabb), With<shipPart>>,
 ) {
     if (time.elapsed_secs() % 13. < time.delta_secs()) {
+        let (low, high) = get_spawn(q);
+        if low > high {
+            return;
+        }
         commands.spawn(Boss::bundle(
             handle,
             5.,
             Vec3 {
-                x: rand::random_range(-600.0..=600.0),
+                x: rand::random_range(low..=high),
                 y: 600.,
                 z: Default::default(),
             },
@@ -128,13 +164,18 @@ fn mobs(
     time: ResMut<Time>,
     mut commands: Commands,
     mut asset: ResMut<AssetServer>,
+    mut q: Query<(&Transform, &ColliderAabb), With<shipPart>>,
 ) {
     if (time.elapsed_secs() % 2. < time.delta_secs()) {
+        let (low, high) = get_spawn(q);
+        if low > high {
+            return;
+        }
         commands.spawn(Mob::bundle(
             handle,
             4.,
             Vec3 {
-                x: rand::random_range(-600.0..=600.0),
+                x: rand::random_range(low..=high),
                 y: 600.,
                 z: Default::default(),
             },
@@ -143,32 +184,10 @@ fn mobs(
     }
 }
 
-fn shoot(
-    mut commands: Commands,
-    query: Single<(&Transform), With<Pla>>,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-    mut click: Res<ButtonInput<MouseButton>>,
-) {
-    if click.just_pressed(MouseButton::Left) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
-            movey(-7.),
-            Shoot,
-            Transform::from_translation(Vec3 {
-                x: query.translation.x,
-                y: -333.,
-                z: Default::default(),
-            }),
-        ));
-    }
-}
 fn x(mut n: ResMut<NextState<levelState>>, mut t: Single<(Entity, &mut Transform), With<Pla>>) {
     let center = Pla::default_pos();
 
     if t.1.translation.xy() != (Pla::default_pos().xy()) {
-        println!("dddddddd");
         let d = center - t.1.translation;
         t.1.translation += d * 0.04;
     }

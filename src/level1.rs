@@ -22,7 +22,6 @@ impl Plugin for MyLevel1Plugin {
                 update,
                 (asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
-                shoot,
             )
                 .run_if(in_state(GameState::GamePlay))
                 .run_if(in_state(level::level1)),
@@ -57,15 +56,24 @@ fn asteroid(
         RenderAssetUsages::RENDER_WORLD,
     );
     let mut points = vec![[0., 0., 0.]];
-    let mut vecr = vec![];
+    let mut vecr = vec![[0.5, 0.5]];
     let mut mutVec = vec![];
     let n_points = 12;
     for i in 0..n_points {
         let angle = 2. * PI / (n_points as f32) * i as f32;
         let distance = rand::random_range(20.0..=35.0);
         points.push([distance * angle.cos(), distance * angle.sin(), 0.]);
-        vecr.push([angle.cos(), angle.sin()]);
+        vecr.push([0.5 * angle.cos() + 0.5, 0.5 * angle.sin() + 0.5]);
     }
+    vecr = vecr
+        .into_iter()
+        .map(|f| {
+            [
+                f[0] + rand::random_range(-0.2..=0.2),
+                f[1] + rand::random_range(-0.2..=0.2),
+            ]
+        })
+        .collect();
     for i in 2..(n_points + 1) {
         mutVec.push(0);
         mutVec.push(i);
@@ -134,28 +142,6 @@ fn mobs(
                 z: Default::default(),
             },
             Default::default(),
-        ));
-    }
-}
-
-fn shoot(
-    mut commands: Commands,
-    query: Single<(&Transform), With<Pla>>,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-    mut click: Res<ButtonInput<MouseButton>>,
-) {
-    if click.just_pressed(MouseButton::Left) {
-        commands.spawn((
-            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
-            MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
-            movey(-7.),
-            Shoot,
-            Transform::from_translation(Vec3 {
-                x: query.translation.x,
-                y: -333.,
-                z: Default::default(),
-            }),
         ));
     }
 }

@@ -2,6 +2,7 @@ use avian2d::{
     collision::collider::{Collider, CollisionLayers},
     dynamics::rigid_body::RigidBody,
 };
+use bevy::prelude::*;
 use bevy::{
     asset::Assets,
     camera::Camera2d,
@@ -19,7 +20,7 @@ use bevy::{
     transform::components::Transform,
 };
 
-use crate::physics::GameLayer;
+use crate::{movey, physics::GameLayer};
 
 #[derive(Event, Message)]
 pub struct Hit {
@@ -57,6 +58,28 @@ pub fn start(
         ),
         Transform::from_translation(Pla::default_pos()),
     ));
+}
+
+pub fn shoot(
+    mut commands: Commands,
+    query: Single<(&Transform), With<Pla>>,
+    mut mesh: ResMut<Assets<Mesh>>,
+    mut mat: ResMut<Assets<ColorMaterial>>,
+    mut click: Res<ButtonInput<MouseButton>>,
+) {
+    if click.just_pressed(MouseButton::Left) {
+        commands.spawn((
+            Mesh2d(mesh.add(Rectangle::new(61_f32, 62_f32))),
+            MeshMaterial2d(mat.add(Color::srgb(0_f32, 0_f32, 255_f32))),
+            movey(-7.),
+            Shoot,
+            Transform {
+                translation: query.translation,
+                rotation: query.rotation,
+                ..Default::default()
+            },
+        ));
+    }
 }
 
 #[derive(Component)]
