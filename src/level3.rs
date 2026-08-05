@@ -12,18 +12,21 @@ use crate::{
     physics::GameLayer,
 };
 const WALL_SPACING: f32 = 300.;
-const Spawn_high: f32 = 550.;
+const Spawn_high: f32 = 250.;
 pub(crate) struct MyLevel3Plugin;
 
 impl Plugin for MyLevel3Plugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(level::level3), spawnSideWalls);
         app.add_systems(
             FixedUpdate,
             (
-                (update, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
-                spawnSpaseShip,
-                moveSpaseShip,
+                (
+                    (spawnSpaseShip, moveSpaseShip, updateSideWalls),
+                    (update, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                )
+                    .chain(),
                 x.run_if(in_state(levelState::levelStart)),
             )
                 .run_if(in_state(GameState::GamePlay))
@@ -33,6 +36,7 @@ impl Plugin for MyLevel3Plugin {
 }
 #[derive(Component)]
 pub struct shipPart;
+
 fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipPart>>) {
     for mut query in query {
         query.translation.y -= 4.;
@@ -56,6 +60,52 @@ fn get_spawn(mut q: Query<(&Transform, &ColliderAabb), With<shipPart>>) -> (f32,
     }
     return (low, high);
 }
+
+#[derive(Component)]
+struct SideWall;
+
+fn spawnSideWalls(
+    mut mat: ResMut<Assets<ColorMaterial>>,
+    mut mesh: ResMut<Assets<Mesh>>,
+    mut commands: Commands,
+    mut img: Res<AssetServer>,
+) {
+    // Left wall
+    commands.spawn((
+        SideWall,
+        shipRect(
+            &mut mat,
+            &mut mesh,
+            &mut img,
+            -WALL_SPACING * 1.5,
+            Spawn_high + 100.,
+            400.,
+            3000.,
+        ),
+    ));
+    // Right wall
+    commands.spawn((
+        SideWall,
+        shipRect(
+            &mut mat,
+            &mut mesh,
+            &mut img,
+            WALL_SPACING * 1.5,
+            Spawn_high + 100.,
+            400.,
+            3000.,
+        ),
+    ));
+}
+
+fn updateSideWalls(mut query: Query<&mut Transform, With<SideWall>>) {
+    for mut transform in &mut query {
+        if transform.translation.y < Spawn_high {
+            transform.translation.y += Spawn_high;
+        }
+    }
+}
+
 fn spawnSpaseShip(
     mut mat: ResMut<Assets<ColorMaterial>>,
     mut mesh: ResMut<Assets<Mesh>>,
@@ -64,28 +114,6 @@ fn spawnSpaseShip(
     mut img: Res<AssetServer>,
 ) {
     if query.iter().all(|a| a.translation.y < Spawn_high) {
-        commands.spawn(
-            (shipRect(
-                &mut mat,
-                &mut mesh,
-                &mut img,
-                -WALL_SPACING,
-                Spawn_high + 200.,
-                61.,
-                12. * Mob::SIZE.x,
-            )),
-        );
-        commands.spawn(
-            (shipRect(
-                &mut mat,
-                &mut mesh,
-                &mut img,
-                WALL_SPACING,
-                Spawn_high + 200.,
-                61.,
-                12. * Mob::SIZE.x,
-            )),
-        );
         commands.spawn(
             (shipRect(
                 &mut mat,
