@@ -20,7 +20,7 @@ impl Plugin for MyLevel3Plugin {
         app.add_systems(
             FixedUpdate,
             (
-                (update, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                (updatelevel3, bose, mobs).run_if(in_state(levelState::Inlevel)),
                 y_mobs,
                 spawnSpaseShip,
                 moveSpaseShip,
@@ -33,7 +33,7 @@ impl Plugin for MyLevel3Plugin {
 }
 #[derive(Component)]
 pub struct shipPart;
-fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipPart>>) {
+pub fn moveSpaseShip(commands: Commands, mut query: Query<&mut Transform, With<shipPart>>) {
     for mut query in query {
         query.translation.y -= 4.;
     }
@@ -69,30 +69,42 @@ fn spawnSpaseShip(
                 &mut mat,
                 &mut mesh,
                 &mut img,
-                -WALL_SPACING,
-                Spawn_high + 200.,
+                Vec3 {
+                    x: -WALL_SPACING,
+                    y: Spawn_high + 200.,
+                    z: 1.,
+                },
                 61.,
-                12. * Mob::SIZE.x,
+                10. * Mob::SIZE.x,
             )),
         );
+
         commands.spawn(
             (shipRect(
                 &mut mat,
                 &mut mesh,
                 &mut img,
-                WALL_SPACING,
-                Spawn_high + 200.,
+                Vec3 {
+                    x: WALL_SPACING,
+                    y: Spawn_high + 200.,
+                    z: 1.,
+                },
                 61.,
-                12. * Mob::SIZE.x,
+                10. * Mob::SIZE.x,
             )),
         );
+
         commands.spawn(
             (shipRect(
                 &mut mat,
                 &mut mesh,
                 &mut img,
-                rand::random_range(300.0..=500.0) * if rand::random_bool(0.5) { 1. } else { -1. },
-                Spawn_high + 10. * Mob::SIZE.y,
+                Vec3 {
+                    x: rand::random_range(300.0..=500.0)
+                        * if rand::random_bool(0.5) { 1. } else { -1. },
+                    y: Spawn_high + 10. * Mob::SIZE.y,
+                    z: 0.,
+                },
                 700.,
                 100.,
             )),
@@ -104,8 +116,7 @@ fn shipRect(
     mut mat: &mut ResMut<Assets<ColorMaterial>>,
     mut mesh: &mut ResMut<Assets<Mesh>>,
     mut img: &mut Res<AssetServer>,
-    x: f32,
-    y: f32,
+    vec3: Vec3,
     width: f32,
     hight: f32,
 ) -> impl Bundle {
@@ -116,11 +127,7 @@ fn shipRect(
         RigidBody::Kinematic,
         CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Bullet, GameLayer::Player]),
         Collider::rectangle(width, hight),
-        Transform::from_translation(Vec3 {
-            x: x,
-            y: y,
-            z: Default::default(),
-        }),
+        Transform::from_translation(vec3),
     )
 }
 fn bose(
@@ -149,7 +156,7 @@ fn bose(
     }
 }
 
-fn update(
+pub fn updatelevel3(
     main: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
     mut mes_pos: MessageReader<CursorMoved>,
     mut pla_transform: Query<(&mut Transform), With<Pla>>,

@@ -10,6 +10,7 @@ mod health;
 mod level1;
 mod level2;
 mod level3;
+mod level4;
 mod modLevH;
 mod physics;
 mod pla;
@@ -49,6 +50,7 @@ fn main() {
             #[cfg(debug_assertions)]
             DebugPlugin,
         )
+        .add_plugins(level4::level4Plugin)
         .add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())
         .add_systems(OnEnter(GameState::GameOver), game_over_ui)
