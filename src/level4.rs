@@ -13,14 +13,14 @@ pub(crate) struct level4Plugin;
 fn y_mobs(mut query: Query<(&mut Orbit, &movey)>) {
     for (mut y, speed) in &mut query {
         let m = speed.0;
-        y.radius -= m;
+        y.radius += m;
     }
 }
 impl Plugin for level4Plugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (orbit_system, moveSpaseShip, trans, y_mobs).run_if(in_state(levelState::levelStart)),
+            (orbit_system, moveSpaseShip, trans, y_mobs, orbit_b).run_if(in_state(levelState::levelStart)),
         );
         app.add_systems(
             FixedUpdate,
