@@ -1,27 +1,35 @@
 use std::thread::spawn;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, state::commands};
 
 use crate::{
     level3::{moveSpaseShip, updatelevel3},
     modLevH::{level, levelState},
-    pla::Pla,
+    movey,
+    pla::{Pla, Shoot},
 };
 
 pub(crate) struct level4Plugin;
-
+fn y_mobs(mut query: Query<(&mut Orbit, &movey)>) {
+    for (mut y, speed) in &mut query {
+        let m = speed.0;
+        y.radius -= m;
+    }
+}
 impl Plugin for level4Plugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (orbit_pla, orbit_system, moveSpaseShip, trans)
-                .run_if(in_state(levelState::levelStart)),
+            (orbit_system, moveSpaseShip, trans, y_mobs).run_if(in_state(levelState::levelStart)),
         );
         app.add_systems(
             FixedUpdate,
             (move_pla, boss_bar).run_if(in_state(levelState::Inlevel)),
         );
-        app.add_systems(OnEnter(level::level4), spawn_core);
+        app.add_systems(
+            OnEnter(level::level4),
+            (orbit_pla.after(spawn_core), spawn_core),
+        );
     }
 }
 #[derive(Component)]
@@ -48,11 +56,15 @@ fn orbit_system(
         let Ok(target_transform) = transforms.get(orbit.target) else {
             continue;
         };
+        println!("{:?}", orbit.angle);
 
         orbit.angle += orbit.angular_speed * time.delta_secs();
+        println!("{:?}", orbit.angle);
 
         let delta = Vec2::new(orbit.angle.cos(), orbit.angle.sin()) * orbit.radius;
-
+        let to_mouse = (target_transform.translation.xy() - transform.translation.xy()).normalize();
+        let rotate_to_mouse = Quat::from_rotation_arc(Vec3::Y, to_mouse.extend(0.));
+        transform.rotation = rotate_to_mouse;
         transform.translation = target_transform.translation + delta.extend(0.0);
     }
 }
@@ -67,16 +79,43 @@ struct Orbit {
     max_radius: f32,
 }
 fn move_pla() {}
+fn orbit_b(
+    core: Single<(&Transform, Entity), With<ship_core>>,
+    mut commands: Commands,
+    a: Query<(&Transform, Entity), (With<Shoot>, Without<Orbit>)>,
+) {
+    for b in a {
+        let direction = b.0.translation - core.0.translation;
+        let angle = direction.y.atan2(direction.x);
+        let radius = direction.length();
+        commands.entity(b.1).insert(Orbit {
+            target: core.1,
+            radius: radius,
+            angle: angle,
+            angular_speed: 2.1,
+            min_radius: 50.,
+            max_radius: 200.,
+        });
+    }
+}
 fn orbit_pla(
     mut commands: Commands,
     pla: Single<Entity, With<Pla>>,
     core: Single<Entity, With<ship_core>>,
+    query: Query<&Transform>,
 ) {
+    let player_pos = query.get(*pla).unwrap().translation;
+    let core_pos = query.get(*core).unwrap().translation;
+
+    let direction = player_pos - core_pos;
+    let angle = direction.y.atan2(direction.x);
+    let radius = direction.length();
+
     commands.entity(*pla).insert(Orbit {
         target: *core,
-        radius: 100.,
-        angle: 0.,
-        angular_speed: 500.1,
+        radius: radius,
+        angle: angle,
+        angular_speed: 2.1,
         min_radius: 50.,
         max_radius: 200.,
     });
