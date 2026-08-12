@@ -1,6 +1,7 @@
 use crate::{
     debug::DebugPlugin,
     enemy::{ImageHandles, Mob, MobHealth},
+    health::HealthEvent,
     level1::Asteroid,
     level3::ShipPart,
     mod_level_h::{
@@ -180,40 +181,43 @@ fn shoot_hit(
     for shoot in shoot {
         for inpac in collisions.entities_colliding_with(shoot.0) {
             if let Ok((e, asteroid, mob, ship, mut health)) = hos.get_mut(inpac) {
-                if asteroid {
-                    commands.entity(shoot.0).despawn();
-                };
-
-                if ship {
-                    commands.entity(shoot.0).despawn();
-                };
+                commands.entity(shoot.0).despawn();
+                commands.trigger(HealthEvent {
+                    entity: e,
+                    value: 1,
+                });
                 if mob {
                     commands.trigger(score::ScoreEvent(1));
-                    match health {
-                        Some(ref mut a) => {
-                            a.0 -= 1;
-                            if a.0 == 0 {
-                                commands.entity(e).despawn();
-                            };
-                        }
-                        None => {
-                            commands.entity(e).despawn();
-                        }
-                    }
-
-                    commands.entity(shoot.0).despawn();
+                    // match health {
+                    //     Some(ref mut a) => {
+                    //         a.0 -= 1;
+                    //         if a.0 == 0 {
+                    //                     commands.entity(e).despawn();
+                    //         };
+                    //     }
+                    //     None => {
+                    //         commands.entity(e).despawn();
+                    //     }
+                    // }
                 }
             }
         }
     }
 }
 
-fn despawn(query: Query<(&Transform, Entity, Has<Mob>), With<MoveY>>, mut commands: Commands) {
+fn despawn(
+    query: Query<(&Transform, Entity, Has<Mob>), With<MoveY>>,
+    mut commands: Commands,
+    p: Single<Entity, With<Pla>>,
+) {
     for (y, e, mob) in query {
         if y.translation.y < -540. {
             commands.entity(e).despawn();
             if mob {
-                commands.trigger(health::HealthEvent(1));
+                commands.trigger(HealthEvent {
+                    entity: *p,
+                    value: 1,
+                });
             }
         }
         if y.translation.y > 1000. {

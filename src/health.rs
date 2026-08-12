@@ -1,6 +1,6 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, state::commands};
 
-use crate::GameState;
+use crate::{GameState, pla::Pla};
 
 pub(crate) struct HealthPlugin;
 
@@ -13,12 +13,10 @@ impl Plugin for HealthPlugin {
             },
             rehealth,
         )
-        .init_resource::<Health>()
-        .add_observer(on_unhealth_event)
         .add_systems(OnEnter(GameState::GamePlay), startup)
         .add_systems(
             FixedUpdate,
-            update_health.run_if(resource_exists_and_changed::<Health>),
+            update_health.run_if(any_match_filter::<(With<Pla>, Changed<Health>)>),
         );
     }
 }
@@ -28,7 +26,7 @@ impl Default for Health {
     }
 }
 
-fn startup(mut commands: Commands, score: ResMut<Health>) {
+fn startup(mut commands: Commands, score: Single<&Health, With<Pla>>) {
     commands.spawn((
         HealthText,
         Text::new(format!("{}", score.0)),
@@ -39,30 +37,44 @@ fn startup(mut commands: Commands, score: ResMut<Health>) {
     ));
 }
 
-#[derive(Resource)]
+#[derive(Component)]
 
 pub struct Health(pub(crate) i32);
-#[derive(Event)]
+#[derive(EntityEvent)]
 
-pub struct HealthEvent(pub i32);
+pub struct HealthEvent {
+    pub entity: Entity,
+    pub value: i32,
+}
+#[derive(EntityEvent)]
 
-fn on_unhealth_event(
-    event: On<HealthEvent>,
-    mut s: ResMut<NextState<crate::GameState>>,
-    mut score: ResMut<Health>,
-) {
-    score.0 -= event.0;
-    if score.0 < 0 {
-        NextState::set_if_neq(&mut s, crate::GameState::GameOver);
+pub struct DespawnEvent {
+    pub entity: Entity,
+}
+pub fn on_health_event(event: On<HealthEvent>, mut commands: Commands, mut a: Query<&mut Health>) {
+    if let Ok(mut health) = a.get_mut(event.event_target()) {
+        health.0 -= event.value;
+        if health.0 <= 0 {
+            commands.trigger(DespawnEvent {
+                entity: event.event_target(),
+            });
+        }
     }
 }
+pub fn on_despawn_event(event: On<DespawnEvent>, mut commands: Commands) {
+    commands.entity(event.event_target()).despawn();
+}
+
 #[derive(Component)]
 struct HealthText;
 
-fn update_health(health: Res<Health>, mut text: Single<&mut Text, With<HealthText>>) {
+fn update_health(
+    health: Single<&Health, With<Pla>>,
+    mut text: Single<&mut Text, With<HealthText>>,
+) {
     text.0 = format!("{}", health.0);
 }
 
-fn rehealth(mut score: ResMut<Health>) {
-    *score = Health::default();
+fn rehealth(mut score: Single<&mut Health, With<Pla>>) {
+    **score = Health::default();
 }

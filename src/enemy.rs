@@ -1,10 +1,17 @@
-use crate::{MoveY, physics::GameLayer};
+use crate::{
+    MoveY,
+    health::{Health, on_despawn_event, on_health_event},
+    physics::GameLayer,
+};
 use avian2d::{
     collision::collider::{Collider, CollisionLayers},
     dynamics::rigid_body::RigidBody,
 };
-use bevy::ecs::{bundle::Bundle, component::Component, resource::Resource};
 use bevy::prelude::*;
+use bevy::{
+    ecs::{bundle::Bundle, component::Component, resource::Resource},
+    ui_widgets::observe,
+};
 
 #[derive(Resource)]
 pub struct ImageHandles {
@@ -38,11 +45,13 @@ impl Boss {
                 ..Default::default()
             },
             Boss,
-            MobHealth(3),
             Mob,
             MoveY(y),
             Hostile,
             Transform::from_translation(pos).with_rotation(rot),
+            Health(3),
+            observe(on_health_event),
+            observe(on_despawn_event),
         )
     }
 }
@@ -57,6 +66,9 @@ impl Mob {
                 custom_size: Some(Vec2 { x: 141., y: 142. }),
                 ..Default::default()
             },
+            Health(1),
+            observe(on_health_event),
+            observe(on_despawn_event),
             Mob,
             MoveY(y),
             Hostile,
