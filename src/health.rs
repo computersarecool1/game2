@@ -1,4 +1,4 @@
-use bevy::{prelude::*, state::commands};
+use bevy::prelude::*;
 
 use crate::GameState;
 
@@ -13,7 +13,6 @@ impl Plugin for HealthPlugin {
             },
             rehealth,
         )
-        .add_systems(FixedUpdate, health)
         .init_resource::<Health>()
         .add_observer(on_unhealth_event)
         .add_systems(OnEnter(GameState::GamePlay), startup)
@@ -45,10 +44,10 @@ fn startup(mut commands: Commands, score: ResMut<Health>) {
 pub struct Health(pub(crate) i32);
 #[derive(Event)]
 
-pub struct healthEvent(pub i32);
-fn health(commands: Commands, mut score: ResMut<Health>) {}
+pub struct HealthEvent(pub i32);
+
 fn on_unhealth_event(
-    event: On<healthEvent>,
+    event: On<HealthEvent>,
     mut s: ResMut<NextState<crate::GameState>>,
     mut score: ResMut<Health>,
 ) {
@@ -64,6 +63,6 @@ fn update_health(health: Res<Health>, mut text: Single<&mut Text, With<HealthTex
     text.0 = format!("{}", health.0);
 }
 
-fn rehealth(commands: Commands, mut score: ResMut<Health>) {
+fn rehealth(mut score: ResMut<Health>) {
     *score = Health::default();
 }

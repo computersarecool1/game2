@@ -1,63 +1,57 @@
 use std::f32::consts::PI;
 
-use bevy::{log::Level, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
-    GameState, Hostile, Mob, MobHealth, Pla, Shoot,
-    enemmey::{Boss, ImageHandles, Mobhandle},
-    modLevH::{level, levelState},
-    movey,
+    Mob, MoveY, Pla,
+    enemy::{Boss, ImageHandles},
+    mod_level_h::{Level, LevelState},
 };
 
-pub(crate) struct level2Plugin;
+pub(crate) struct Level2plugin;
 
-impl Plugin for level2Plugin {
+impl Plugin for Level2plugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (((
-                x.run_if(in_state(levelState::levelStart)),
+            ((
+                x.run_if(in_state(LevelState::LevelStart)),
                 rotate,
-                (bose, mobs).run_if(in_state(levelState::Inlevel)),
+                (bose, mobs).run_if(in_state(LevelState::Inlevel)),
                 y_mobs,
             )
-                .run_if(in_state(level::level2)),)),
+                .run_if(in_state(Level::Level2)),),
         );
     }
 }
 
 fn bose(
-    mut t: Single<(Entity, &mut Transform), With<Pla>>,
+    t: Single<(Entity, &mut Transform), With<Pla>>,
     time: ResMut<Time>,
     mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
     handle: Res<ImageHandles>,
 ) {
     let pos =
         Quat::from_rotation_z(rand::random_range(PI..=PI * 2.)).mul_vec3(Vec3::new(0., 500., 0.));
     let rotate_to_pla = Quat::from_rotation_arc(Vec3::Y, (t.1.translation - pos).normalize());
-    if (time.elapsed_secs() % 13. < time.delta_secs()) {
+    if time.elapsed_secs() % 13. < time.delta_secs() {
         commands.spawn(Boss::bundle(handle, -5., pos, rotate_to_pla));
     }
 }
 fn mobs(
     time: ResMut<Time>,
     mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-    mut t: Single<(Entity, &mut Transform), With<Pla>>,
-    mut asset: ResMut<AssetServer>,
+    t: Single<(Entity, &mut Transform), With<Pla>>,
     handle: Res<ImageHandles>,
 ) {
-    if (time.elapsed_secs() % 2. < time.delta_secs()) {
+    if time.elapsed_secs() % 2. < time.delta_secs() {
         let pos = Quat::from_rotation_z(rand::random_range(PI..=PI * 2.))
             .mul_vec3(Vec3::new(0., 500., 0.));
         let rotate_to_pla = Quat::from_rotation_arc(Vec3::Y, (t.1.translation - pos).normalize());
         commands.spawn(Mob::bundle(handle, -4., pos, rotate_to_pla));
     }
 }
-fn y_mobs(mut query: Query<(&mut Transform, &movey)>) {
+fn y_mobs(mut query: Query<(&mut Transform, &MoveY)>) {
     for (mut y, speed) in &mut query {
         let m = y.rotation.mul_vec3(Vec3::new(0., speed.0, 0.));
         y.translation -= m;
@@ -79,7 +73,7 @@ fn rotate(
         }
     }
 }
-fn x(mut n: ResMut<NextState<levelState>>, mut t: Single<(Entity, &mut Transform), With<Pla>>) {
+fn x(mut n: ResMut<NextState<LevelState>>, mut t: Single<(Entity, &mut Transform), With<Pla>>) {
     let center = Vec3::new(0., 0., 0.);
 
     if t.1.translation.xy() != (0., 0.).into() {
@@ -88,6 +82,6 @@ fn x(mut n: ResMut<NextState<levelState>>, mut t: Single<(Entity, &mut Transform
     }
 
     if t.1.translation.xy().as_ivec2() == IVec2::ZERO {
-        NextState::set_if_neq(&mut n, levelState::Inlevel);
+        NextState::set_if_neq(&mut n, LevelState::Inlevel);
     }
 }

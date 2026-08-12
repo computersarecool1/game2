@@ -5,12 +5,11 @@ use avian2d::{
 };
 use bevy::{
     asset::RenderAssetUsages,
-    color::palettes::css::GREY,
     mesh::{Indices, PrimitiveTopology},
     prelude::*,
 };
 
-use crate::{GameState, enemmey::*, modLevH::*, movey, physics::GameLayer, pla::*};
+use crate::{GameState, MoveY, enemy::*, mod_level_h::*, physics::GameLayer, pla::*};
 
 pub(crate) struct MyLevel1Plugin;
 
@@ -20,17 +19,21 @@ impl Plugin for MyLevel1Plugin {
             FixedUpdate,
             (
                 update,
-                (asteroid, bose, mobs).run_if(in_state(levelState::Inlevel)),
+                (asteroid, bose, mobs).run_if(in_state(LevelState::Inlevel)),
                 y_mobs,
             )
                 .run_if(in_state(GameState::GamePlay))
-                .run_if(in_state(level::level1)),
+                .run_if(in_state(Level::Level1)),
         );
     }
 }
 
+#[derive(Component)]
+#[require(Collider::rectangle(71., 71.), CollisionLayers::new(GameLayer::Asteroid, [GameLayer::ShipPart,GameLayer::Player,GameLayer::Bullet]),RigidBody::Kinematic)]
+pub struct Asteroid;
+
 fn bose(time: ResMut<Time>, mut commands: Commands, handle: Res<ImageHandles>) {
-    if (time.elapsed_secs() % 13. < time.delta_secs()) {
+    if time.elapsed_secs() % 13. < time.delta_secs() {
         commands.spawn(Boss::bundle(
             handle,
             5.,
@@ -57,7 +60,7 @@ fn asteroid(
     );
     let mut points = vec![[0., 0., 0.]];
     let mut vecr = vec![[0.5, 0.5]];
-    let mut mutVec = vec![];
+    let mut mut_vec = vec![];
     let n_points = 12;
     for i in 0..n_points {
         let angle = 2. * PI / (n_points as f32) * i as f32;
@@ -75,24 +78,24 @@ fn asteroid(
         })
         .collect();
     for i in 2..(n_points + 1) {
-        mutVec.push(0);
-        mutVec.push(i);
-        mutVec.push(i - 1);
+        mut_vec.push(0);
+        mut_vec.push(i);
+        mut_vec.push(i - 1);
     }
-    mutVec.push(0);
-    mutVec.push(n_points);
-    mutVec.push(1);
+    mut_vec.push(0);
+    mut_vec.push(n_points);
+    mut_vec.push(1);
     asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
     asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_UV_0, vecr);
 
-    asteroid_shaper.insert_indices(Indices::U32(mutVec));
+    asteroid_shaper.insert_indices(Indices::U32(mut_vec));
 
-    if (time.elapsed_secs() % 1. < time.delta_secs()) {
+    if time.elapsed_secs() % 1. < time.delta_secs() {
         commands.spawn((
             Mesh2d(mesh.add(asteroid_shaper)),
             MeshMaterial2d(mat.add(handle.asteroid.clone())),
             Asteroid,
-            movey(5.),
+            MoveY(5.),
             Hostile,
             Transform::from_translation(Vec3 {
                 x: rand::random_range(-600.0..=600.0),
@@ -102,10 +105,11 @@ fn asteroid(
         ));
     }
 }
+
 fn update(
     main: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
     mut mes_pos: MessageReader<CursorMoved>,
-    mut pla_transform: Query<(&mut Transform), With<Pla>>,
+    mut pla_transform: Query<&mut Transform, With<Pla>>,
 ) {
     let (camera, cam_transform) = main.into_inner();
     for mes in mes_pos.read() {
@@ -116,23 +120,14 @@ fn update(
         }
     }
 }
-#[derive(Component)]
-#[require(Collider::rectangle(71., 71.), CollisionLayers::new(GameLayer::Asteroid, [GameLayer::ShipPart,GameLayer::Player,GameLayer::Bullet]),RigidBody::Kinematic)]
-pub struct Asteroid;
 
-fn y_mobs(mut query: Query<(&mut Transform, &movey)>) {
+fn y_mobs(mut query: Query<(&mut Transform, &MoveY)>) {
     for (mut y, speed) in &mut query {
         y.translation.y -= speed.0;
     }
 }
-fn mobs(
-    time: ResMut<Time>,
-    mut commands: Commands,
-    mut mesh: ResMut<Assets<Mesh>>,
-    mut mat: ResMut<Assets<ColorMaterial>>,
-    handle: Res<ImageHandles>,
-) {
-    if (time.elapsed_secs() % 2. < time.delta_secs()) {
+fn mobs(time: ResMut<Time>, mut commands: Commands, handle: Res<ImageHandles>) {
+    if time.elapsed_secs() % 2. < time.delta_secs() {
         commands.spawn(Mob::bundle(
             handle,
             4.,

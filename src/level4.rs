@@ -1,43 +1,55 @@
-use std::thread::spawn;
-
-use bevy::{prelude::*, state::commands};
+use bevy::prelude::*;
 
 use crate::{
-    level3::{moveSpaseShip, updatelevel3},
-    modLevH::{level, levelState},
-    movey,
+    MoveY,
+    level3::move_space_ship,
+    mod_level_h::{Level, LevelState},
     pla::{Pla, Shoot},
 };
 
-pub(crate) struct level4Plugin;
-fn y_mobs(mut query: Query<(&mut Orbit, &movey)>) {
+pub(crate) struct Level4plugin;
+
+impl Plugin for Level4plugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            FixedUpdate,
+            (orbit_system, move_space_ship, trans, y_mobs, orbit_b)
+                .run_if(in_state(LevelState::LevelStart)),
+        );
+        app.add_systems(
+            FixedUpdate,
+            (move_pla, boss_bar).run_if(in_state(LevelState::Inlevel)),
+        );
+        app.add_systems(
+            OnEnter(Level::Level4),
+            (orbit_pla.after(spawn_core), spawn_core),
+        );
+    }
+}
+
+#[derive(Component)]
+struct ShipCore;
+
+#[derive(Component)]
+struct Orbit {
+    target: Entity,
+    radius: f32,
+    angle: f32,
+    angular_speed: f32,
+    min_radius: f32,
+    max_radius: f32,
+}
+
+fn y_mobs(mut query: Query<(&mut Orbit, &MoveY)>) {
     for (mut y, speed) in &mut query {
         let m = speed.0;
         y.radius += m;
     }
 }
-impl Plugin for level4Plugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            (orbit_system, moveSpaseShip, trans, y_mobs, orbit_b).run_if(in_state(levelState::levelStart)),
-        );
-        app.add_systems(
-            FixedUpdate,
-            (move_pla, boss_bar).run_if(in_state(levelState::Inlevel)),
-        );
-        app.add_systems(
-            OnEnter(level::level4),
-            (orbit_pla.after(spawn_core), spawn_core),
-        );
-    }
-}
-#[derive(Component)]
-struct ship_core;
 
 fn spawn_core(mut commands: Commands, img: Res<AssetServer>) {
     commands.spawn((
-        ship_core,
+        ShipCore,
         Transform {
             ..Default::default()
         },
@@ -69,18 +81,10 @@ fn orbit_system(
     }
 }
 
-#[derive(Component)]
-struct Orbit {
-    target: Entity,
-    radius: f32,
-    angle: f32,
-    angular_speed: f32,
-    min_radius: f32,
-    max_radius: f32,
-}
 fn move_pla() {}
+
 fn orbit_b(
-    core: Single<(&Transform, Entity), With<ship_core>>,
+    core: Single<(&Transform, Entity), With<ShipCore>>,
     mut commands: Commands,
     a: Query<(&Transform, Entity), (With<Shoot>, Without<Orbit>)>,
 ) {
@@ -90,8 +94,8 @@ fn orbit_b(
         let radius = direction.length();
         commands.entity(b.1).insert(Orbit {
             target: core.1,
-            radius: radius,
-            angle: angle,
+            radius,
+            angle,
             angular_speed: 2.1,
             min_radius: 50.,
             max_radius: 200.,
@@ -101,7 +105,7 @@ fn orbit_b(
 fn orbit_pla(
     mut commands: Commands,
     pla: Single<Entity, With<Pla>>,
-    core: Single<Entity, With<ship_core>>,
+    core: Single<Entity, With<ShipCore>>,
     query: Query<&Transform>,
 ) {
     let player_pos = query.get(*pla).unwrap().translation;
@@ -113,13 +117,14 @@ fn orbit_pla(
 
     commands.entity(*pla).insert(Orbit {
         target: *core,
-        radius: radius,
-        angle: angle,
+        radius,
+        angle,
         angular_speed: 2.1,
         min_radius: 50.,
         max_radius: 200.,
     });
 }
+
 fn boss_bar() {}
 
 // fn spawn_at_pipe() {}

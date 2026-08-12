@@ -9,7 +9,7 @@ impl Plugin for ScorePlugin {
                 entered: crate::GameState::GamePlay,
                 exited: crate::GameState::GameOver,
             },
-            reSetScore,
+            reset_score,
         )
         .init_resource::<Score>()
         .add_observer(on_score_event);
@@ -27,6 +27,6 @@ fn on_score_event(event: On<ScoreEvent>, mut score: ResMut<Score>) {
     score.0 += event.0;
 }
 
-fn reSetScore(mut score: ResMut<Score>) {
+fn reset_score(mut score: ResMut<Score>) {
     score.0 = 0;
 }
