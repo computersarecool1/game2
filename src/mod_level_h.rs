@@ -53,7 +53,7 @@ fn change_level(
         Level::Level1 => 2,
         Level::Level2 => 5,
         Level::Level3 => 8,
-        Level::Level4 => 558,
+        Level::Level4 => 13,
     };
 
     if s.0 >= end_score {

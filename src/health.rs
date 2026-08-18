@@ -26,10 +26,10 @@ impl Default for Health {
     }
 }
 
-fn startup(mut commands: Commands, score: Single<&Health, With<Pla>>) {
+fn startup(mut commands: Commands) {
     commands.spawn((
         HealthText,
-        Text::new(format!("{}", score.0)),
+        Text::new(""),
         TextFont {
             font_size: 60.0,
             ..Default::default()
@@ -68,10 +68,11 @@ pub fn on_despawn_event(event: On<DespawnEvent>, mut commands: Commands) {
 #[derive(Component)]
 struct HealthText;
 
-fn update_health(
+pub fn update_health(
     health: Single<&Health, With<Pla>>,
     mut text: Single<&mut Text, With<HealthText>>,
 ) {
+    println!("update_health");
     text.0 = format!("{}", health.0);
 }
 

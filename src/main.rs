@@ -1,7 +1,7 @@
 use crate::{
     debug::DebugPlugin,
     enemy::{ImageHandles, Mob, MobHealth},
-    health::HealthEvent,
+    health::{HealthEvent, update_health},
     level1::Asteroid,
     level3::ShipPart,
     mod_level_h::{
@@ -140,7 +140,7 @@ fn game_over_ui(score: ResMut<score::Score>, mut commands: Commands) {
     ));
 }
 
-fn start_de_spawn_mobs(mut commands: Commands, query: Query<Entity, With<MoveY>>) {
+fn start_de_spawn_mobs(mut commands: Commands, query: Query<(Entity), With<MoveY>>) {
     for query in query {
         commands.entity(query).despawn();
     }

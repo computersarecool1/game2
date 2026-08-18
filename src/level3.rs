@@ -10,8 +10,8 @@ use crate::{
     },
     physics::GameLayer,
 };
-const WALL_SPACING: f32 = 300.;
-const SPAWN_HIGH: f32 = 550.;
+pub const WALL_SPACING: f32 = 300.;
+pub const SPAWN_HIGH: f32 = 550.;
 pub(crate) struct MyLevel3Plugin;
 
 impl Plugin for MyLevel3Plugin {
@@ -19,7 +19,8 @@ impl Plugin for MyLevel3Plugin {
         app.add_systems(
             FixedUpdate,
             (
-                (updatelevel3, bose, mobs).run_if(in_state(LevelState::Inlevel)),
+                (bose, mobs).run_if(in_state(LevelState::Inlevel)),
+                updatelevel3,
                 y_mobs,
                 spawn_space_ship,
                 move_space_ship,
@@ -57,25 +58,26 @@ fn get_spawn(q: Query<(&Transform, &ColliderAabb), With<ShipPart>>) -> (f32, f32
     (low, high)
 }
 
-fn spawn_space_ship(
+pub fn spawn_space_ship(
     mut mat: ResMut<Assets<ColorMaterial>>,
     mut mesh: ResMut<Assets<Mesh>>,
     mut commands: Commands,
     query: Query<&mut Transform, With<ShipPart>>,
     mut img: Res<AssetServer>,
 ) {
-    if query.iter().all(|a| a.translation.y < SPAWN_HIGH) {
+    if query.iter().all(|a| a.translation.y < SPAWN_HIGH - 600.) {
+        let mut wall_with = 680.;
         commands.spawn(ship_rect(
             &mut mat,
             &mut mesh,
             &mut img,
             Vec3 {
-                x: -WALL_SPACING,
+                x: -WALL_SPACING - 0.5 * wall_with,
                 y: SPAWN_HIGH + 200.,
                 z: 1.,
             },
-            61.,
-            10. * Mob::SIZE.x,
+            wall_with,
+            800.,
         ));
 
         commands.spawn(ship_rect(
@@ -83,12 +85,12 @@ fn spawn_space_ship(
             &mut mesh,
             &mut img,
             Vec3 {
-                x: WALL_SPACING,
+                x: WALL_SPACING + 0.5 * wall_with,
                 y: SPAWN_HIGH + 200.,
                 z: 1.,
             },
-            61.,
-            10. * Mob::SIZE.x,
+            wall_with,
+            800.,
         ));
 
         commands.spawn(ship_rect(
@@ -98,7 +100,7 @@ fn spawn_space_ship(
             Vec3 {
                 x: rand::random_range(300.0..=500.0)
                     * if rand::random_bool(0.5) { 1. } else { -1. },
-                y: SPAWN_HIGH + 10. * Mob::SIZE.y,
+                y: SPAWN_HIGH + 200.,
                 z: 0.,
             },
             700.,
@@ -107,7 +109,7 @@ fn spawn_space_ship(
     };
 }
 
-fn ship_rect(
+pub fn ship_rect(
     mat: &mut ResMut<Assets<ColorMaterial>>,
     mesh: &mut ResMut<Assets<Mesh>>,
     img: &mut Res<AssetServer>,
@@ -165,7 +167,7 @@ pub fn updatelevel3(
     }
 }
 
-fn y_mobs(mut query: Query<(&mut Transform, &MoveY)>) {
+pub(crate) fn y_mobs(mut query: Query<(&mut Transform, &MoveY)>) {
     for (mut y, speed) in &mut query {
         y.translation.y -= speed.0;
     }
