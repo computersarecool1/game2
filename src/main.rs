@@ -1,4 +1,5 @@
 use crate::{
+    #[cfg(debug_assertions)]
     debug::DebugPlugin,
     enemy::{ImageHandles, Mob, MobHealth},
     health::{HealthEvent, update_health},
@@ -38,10 +39,10 @@ fn main() {
             health::HealthPlugin,
         ))
         .add_plugins(physics::physicsPlugin)
-        .add_plugins(
+        .add_plugins((
             #[cfg(debug_assertions)]
             DebugPlugin,
-        )
+        ))
         .add_plugins(level4::Level4plugin)
         .add_plugins(level1::MyLevel1Plugin)
         .add_systems(Startup, (start).chain())

@@ -7,6 +7,6 @@ edition = "2024"
 bevy = { version = "0.18.1", features = ["experimental_bevy_ui_widgets"] }
 rand = "0.10.1"
 avian2d = "0.6"
-
+noisy_bevy = "0.13"
 [lints.clippy]
 type_complexity = "allow"

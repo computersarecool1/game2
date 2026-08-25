@@ -7,10 +7,13 @@ use avian2d::{
     collision::collider::{Collider, CollisionLayers},
     dynamics::rigid_body::RigidBody,
 };
-use bevy::prelude::*;
 use bevy::{
     ecs::{bundle::Bundle, component::Component, resource::Resource},
     ui_widgets::observe,
+};
+use bevy::{
+    image::{ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor},
+    prelude::*,
 };
 
 #[derive(Resource)]
@@ -26,7 +29,17 @@ impl FromWorld for ImageHandles {
         Self {
             mob: asset_server.load("mob.png"),
             boss: asset_server.load("boss.png"),
-            asteroid: asset_server.load("asteroid.png"),
+            asteroid: asset_server.load_with_settings("asteroid.png", |s: &mut _| {
+                *s = ImageLoaderSettings {
+                    sampler: ImageSampler::Descriptor(ImageSamplerDescriptor {
+                        // rewriting mode to repeat image,
+                        address_mode_u: ImageAddressMode::Repeat,
+                        address_mode_v: ImageAddressMode::Repeat,
+                        ..default()
+                    }),
+                    ..default()
+                }
+            }),
         }
     }
 }

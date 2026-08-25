@@ -10,6 +10,9 @@ use crate::{
     },
     physics::GameLayer,
 };
+pub const SHIP_SPEED: f32 = 168.;
+
+pub const ROCK: f32 = 1.;
 pub const WALL_SPACING: f32 = 300.;
 pub const SPAWN_HIGH: f32 = 550.;
 pub(crate) struct MyLevel3Plugin;
@@ -33,10 +36,9 @@ impl Plugin for MyLevel3Plugin {
 }
 #[derive(Component)]
 pub struct ShipPart;
-
-pub fn move_space_ship(_commands: Commands, query: Query<&mut Transform, With<ShipPart>>) {
+pub fn move_space_ship(time: Res<Time>, query: Query<&mut Transform, With<ShipPart>>) {
     for mut query in query {
-        query.translation.y -= 4.;
+        query.translation.y -= time.delta_secs() * SHIP_SPEED;
     }
 }
 
@@ -118,8 +120,16 @@ pub fn ship_rect(
     hight: f32,
 ) -> impl Bundle {
     (
-        Mesh2d(mesh.add(Rectangle::new(width, hight))),
-        MeshMaterial2d(mat.add(img.load("asteroid.png"))),
+        Sprite {
+            image: img.load("asteroid.png"),
+            image_mode: SpriteImageMode::Tiled {
+                tile_x: true,
+                tile_y: true,
+                stretch_value: 1. * ROCK,
+            },
+            custom_size: Some(Vec2::new(width, hight)),
+            ..Default::default()
+        },
         ShipPart,
         RigidBody::Kinematic,
         CollisionLayers::new(GameLayer::ShipPart, [GameLayer::Bullet, GameLayer::Player]),

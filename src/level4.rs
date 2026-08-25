@@ -1,13 +1,8 @@
 use std::f32::consts::PI;
 use std::time::Duration;
 
-use bevy::asset::*;
-use bevy::color::palettes::css::RED;
-use bevy::mesh::*;
-use bevy::prelude::*;
-use bevy::{ecs::system::command, prelude::TimerMode};
-
-use crate::level3::{self, updatelevel3};
+use crate::enemy::ImageHandles;
+use crate::level3::{self, ROCK, SHIP_SPEED, updatelevel3};
 use crate::level4;
 use crate::{
     MoveY,
@@ -16,9 +11,16 @@ use crate::{
     mod_level_h::{Level, LevelState},
     pla::{Pla, Shoot},
 };
+use bevy::asset::*;
+use bevy::color::palettes::css::RED;
+use bevy::mesh::*;
+use bevy::prelude::*;
+use bevy::{ecs::system::command, prelude::TimerMode};
+use noisy_bevy::fbm_simplex_2d;
 
 pub(crate) struct Level4plugin;
 
+const SPAWN_OFF: f32 = 1400.;
 impl Plugin for Level4plugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(Level::Level4), trans);
@@ -93,15 +95,18 @@ fn move_pla_to_orbit(mut t: Single<(Entity, &mut Orbit), With<Pla>>) {
         t.1.angular_speed += 0.001;
     }
 }
+#[derive(Component)]
+struct ShipChamber;
+fn x(time: Res<Time>, mut t: Query<(Entity, &mut Transform), With<ShipChamber>>) {
+    for mut t in t {
+        let center = Vec3::new(0., 0., 0.);
 
-fn x(mut t: Single<(Entity, &mut Transform), With<ShipCore>>) {
-    let center = Vec3::new(0., 0., 0.);
-
-    if t.1.translation.xy() != (0., 0.).into() {
-        let d = center - t.1.translation;
-        t.1.translation += d * 0.04;
+        if t.1.translation.xy() != (0., 0.).into() {
+            let d = center - t.1.translation;
+            t.1.translation += d.normalize() * time.delta_secs() * d.length().clamp(0., SHIP_SPEED);
+        }
+        println!("{}", t.1.translation);
     }
-    println!("{}", t.1.translation);
 }
 #[derive(Component)]
 struct Orbit {
@@ -124,14 +129,17 @@ fn spawn_core(
     mut mat: ResMut<Assets<ColorMaterial>>,
     mut mesh: ResMut<Assets<Mesh>>,
     mut commands: Commands,
+    handle: Res<ImageHandles>,
+
     img: Res<AssetServer>,
 ) {
     commands.spawn((
         ShipCore,
+        ShipChamber,
         Transform {
             translation: Vec3 {
                 x: 0.,
-                y: 600.,
+                y: SPAWN_OFF,
                 z: 0.,
             },
             ..Default::default()
@@ -140,36 +148,56 @@ fn spawn_core(
     ));
 
     let mut asteroid_shaper = Mesh::new(
-        PrimitiveTopology::TriangleList,
+        PrimitiveTopology::TriangleStrip,
         RenderAssetUsages::RENDER_WORLD,
     );
-    let mut points = vec![[0., 0., 0.]];
-    let mut vecr = vec![[0.5, 0.5]];
+    let r = 500.;
+    let mut points = vec![[-WALL_SPACING / 2., r, 0.]];
+    let mut vecr = vec![[0.5, 1.]];
     let mut mut_vec = vec![];
-    let n_points = 12;
+    let sve = -WALL_SPACING / 2.;
+    let sve2 = WALL_SPACING / 2.;
+
+    let angle_gap = ((WALL_SPACING) / r);
+    let n_points = 200;
+    let scale = 0.7;
     for i in 0..n_points {
-        let angle = 2. * PI / (n_points as f32) * i as f32;
-        let distance = rand::random_range(20.0..=35.0);
-        points.push([distance * angle.cos(), distance * angle.sin(), 0.]);
-        vecr.push([0.5 * angle.cos() + 0.5, 0.5 * angle.sin() + 0.5]);
+        let angle =
+            (2. * PI - angle_gap) / (n_points as f32) * i as f32 - (PI / 2.) + angle_gap / 2.;
+        let offset = fbm_simplex_2d(
+            Vec2::new(angle.cos() * scale, angle.sin() * scale),
+            3,
+            3.,
+            0.5,
+        );
+        let distance = r + offset * 50.;
+
+        points.push([
+            (distance + 1500.) * angle.cos(),
+            (distance + 1500.) * angle.sin(),
+            0.,
+        ]);
+        points.push([(distance) * angle.cos(), (distance) * angle.sin(), 0.]);
+        vecr.push([
+            (ROCK + 1.5) * angle.cos() + 0.5,
+            (ROCK + 1.5) * angle.sin() + 0.5,
+        ]);
+        vecr.push([
+            (ROCK + 0.2 + offset * 0.05 * ROCK) * angle.cos() + 0.5,
+            (ROCK + 0.2 + offset * 0.05 * ROCK) * angle.sin() + 0.5,
+        ]);
     }
-    vecr = vecr
-        .into_iter()
-        .map(|f| {
-            [
-                f[0] + rand::random_range(-0.2..=0.2),
-                f[1] + rand::random_range(-0.2..=0.2),
-            ]
-        })
-        .collect();
-    for i in 2..(n_points + 1) {
-        mut_vec.push(0);
+    vecr.push([0.5, 1.]);
+
+    vecr.push([0.5, 1.]);
+
+    points.push([WALL_SPACING / 2., -r, 0.]);
+    points.push([WALL_SPACING / 2., -r - 27., 0.]);
+
+    for i in 0..(2 * n_points + 1) {
         mut_vec.push(i);
-        mut_vec.push(i - 1);
     }
-    mut_vec.push(0);
-    mut_vec.push(n_points);
-    mut_vec.push(1);
+
     asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
     asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_UV_0, vecr);
 
@@ -177,7 +205,16 @@ fn spawn_core(
 
     commands.spawn((
         Mesh2d(mesh.add(asteroid_shaper)),
-        MeshMaterial2d(mat.add(ColorMaterial::from_color(RED))),
+        ShipChamber,
+        Transform {
+            translation: Vec3 {
+                x: 0.,
+                y: SPAWN_OFF,
+                z: 1.,
+            },
+            ..Default::default()
+        },
+        MeshMaterial2d(mat.add(handle.asteroid.clone())),
     ));
 }
 #[derive(Resource)]
