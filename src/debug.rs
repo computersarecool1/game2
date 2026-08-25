@@ -9,6 +9,7 @@ pub(crate) struct DebugPlugin;
 
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(FixedUpdate, state_printer);
         app.add_systems(
             FixedUpdate,
             (change_level_next_button, start_de_spawn_mobs)
@@ -21,7 +22,9 @@ impl Plugin for DebugPlugin {
 pub fn system_on_key(keycode: KeyCode) -> impl Fn(Res<ButtonInput<KeyCode>>) -> bool {
     move |keys: Res<ButtonInput<KeyCode>>| keys.just_pressed(keycode)
 }
-
+fn state_printer(level_state: Res<State<LevelState>>, level: Res<State<Level>>) {
+    println!("levelstate: {:?} , {:?}: level", level, level_state);
+}
 fn change_level_next_button(
     level: Res<State<Level>>,
 

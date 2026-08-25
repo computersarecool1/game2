@@ -200,12 +200,12 @@ fn mobs(
 fn x(mut n: ResMut<NextState<LevelState>>, mut t: Single<(Entity, &mut Transform), With<Pla>>) {
     let center = Pla::default_pos();
 
-    if t.1.translation.xy() != (Pla::default_pos().xy()) {
+    if t.1.translation.y != (Pla::default_pos().y) {
         let d = center - t.1.translation;
-        t.1.translation += d * 0.04;
+        t.1.translation.y += d.y * 0.04;
     }
 
-    if 1. >= Pla::default_pos().xy().distance(t.1.translation.xy()) {
+    if 1. >= Pla::default_pos().y.distance(t.1.translation.y) {
         NextState::set_if_neq(&mut n, LevelState::Inlevel);
         t.1.rotation = Quat::default();
     }

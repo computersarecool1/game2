@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 use std::time::Duration;
 
 use bevy::asset::*;
+use bevy::color::palettes::css::RED;
 use bevy::mesh::*;
 use bevy::prelude::*;
 use bevy::{ecs::system::command, prelude::TimerMode};
@@ -119,7 +120,12 @@ fn y_mobs(mut query: Query<(&mut Orbit, &MoveY)>) {
     }
 }
 
-fn spawn_core(mut commands: Commands, img: Res<AssetServer>) {
+fn spawn_core(
+    mut mat: ResMut<Assets<ColorMaterial>>,
+    mut mesh: ResMut<Assets<Mesh>>,
+    mut commands: Commands,
+    img: Res<AssetServer>,
+) {
     commands.spawn((
         ShipCore,
         Transform {
@@ -168,6 +174,11 @@ fn spawn_core(mut commands: Commands, img: Res<AssetServer>) {
     asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_UV_0, vecr);
 
     asteroid_shaper.insert_indices(Indices::U32(mut_vec));
+
+    commands.spawn((
+        Mesh2d(mesh.add(asteroid_shaper)),
+        MeshMaterial2d(mat.add(ColorMaterial::from_color(RED))),
+    ));
 }
 #[derive(Resource)]
 struct eTime(Timer);
