@@ -23,7 +23,7 @@ pub fn system_on_key(keycode: KeyCode) -> impl Fn(Res<ButtonInput<KeyCode>>) -> 
     move |keys: Res<ButtonInput<KeyCode>>| keys.just_pressed(keycode)
 }
 fn state_printer(level_state: Res<State<LevelState>>, level: Res<State<Level>>) {
-    println!("levelstate: {:?} , {:?}: level", level, level_state);
+    // println!("levelstate: {:?} , {:?}: level", level, level_state);
 }
 fn change_level_next_button(
     level: Res<State<Level>>,

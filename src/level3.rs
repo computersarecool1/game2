@@ -45,16 +45,16 @@ pub fn move_space_ship(time: Res<Time>, query: Query<&mut Transform, With<ShipPa
 fn get_spawn(q: Query<(&Transform, &ColliderAabb), With<ShipPart>>) -> (f32, f32) {
     let mut low = -WALL_SPACING + Mob::SIZE.x;
     let mut high = WALL_SPACING - Mob::SIZE.x;
-    println!("fornew");
+    // println!("fornew");
     for s in q {
         if (SPAWN_HIGH).distance(s.0.translation.y) < 250. {
-            println!("found");
+            // println!("found");
             if s.0.translation.x < 0. {
                 low = low.max(s.1.max.x)
             } else {
                 high = high.min(s.1.min.x)
             };
-            println!("{} {}", low, high)
+            //println!("{} {}", low, high)
         }
     }
     (low, high)

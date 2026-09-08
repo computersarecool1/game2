@@ -45,6 +45,9 @@ pub struct Pla;
 )]
 pub struct Shoot;
 
+pub fn run_pla_die(mut commands: Commands, pla: Single<(Entity), With<Pla>>) {
+    commands.entity(*pla).despawn();
+}
 pub fn start(
     mut commands: Commands,
     mut mesh: ResMut<Assets<Mesh>>,

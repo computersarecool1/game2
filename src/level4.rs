@@ -4,6 +4,7 @@ use std::time::Duration;
 use crate::enemy::ImageHandles;
 use crate::level3::{self, ROCK, SHIP_SPEED, updatelevel3};
 use crate::level4;
+use crate::physics::GameLayer;
 use crate::{
     MoveY,
     enemy::Mob,
@@ -11,6 +12,9 @@ use crate::{
     mod_level_h::{Level, LevelState},
     pla::{Pla, Shoot},
 };
+use avian2d::collision::collider::{Collider, CollisionLayers};
+use avian2d::dynamics::rigid_body::RigidBody;
+use avian2d::dynamics::rigid_body::forces::RigidBodyForces;
 use bevy::asset::*;
 use bevy::color::palettes::css::RED;
 use bevy::mesh::*;
@@ -26,7 +30,13 @@ impl Plugin for Level4plugin {
         app.add_systems(OnEnter(Level::Level4), trans);
         app.add_systems(
             FixedUpdate,
-            (updatelevel3, move_space_ship, y_mobs, transToStart).run_if(in_state(Level::Level4)),
+            (
+                updatelevel3.before(orbit_system),
+                move_space_ship,
+                y_mobs,
+                transToStart,
+            )
+                .run_if(in_state(Level::Level4)),
         )
         .add_systems(
             OnEnter(LevelState::Inlevel),
@@ -38,9 +48,17 @@ impl Plugin for Level4plugin {
                 .run_if(in_state(Level::Level4))
                 .run_if(in_state(LevelState::LevelStart)),
         );
+
         app.add_systems(
             FixedUpdate,
-            (move_pla_to_orbit, orbit_b, orbit_system, move_pla, boss_bar)
+            (
+                change_distance,
+                move_pla_to_orbit,
+                orbit_b,
+                orbit_system,
+                move_pla,
+                boss_bar,
+            )
                 .run_if(in_state(LevelState::Inlevel))
                 .run_if(in_state(Level::Level4)),
         );
@@ -95,7 +113,30 @@ fn move_pla_to_orbit(mut t: Single<(Entity, &mut Orbit), With<Pla>>) {
         t.1.angular_speed += 0.001;
     }
 }
+
+pub fn change_distance(
+    mut old_mouse: Local<Option<Vec2>>,
+    mut dis: Single<(&mut Orbit), With<Pla>>,
+    main: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut mes_pos: MessageReader<CursorMoved>,
+    mut pla_transform: Query<&mut Transform, With<Pla>>,
+) {
+    let (camera, cam_transform) = main.into_inner();
+    for mes in mes_pos.read() {
+        for mut pla_transform in &mut pla_transform {
+            if let Ok(pos) = camera.viewport_to_world_2d(cam_transform, mes.position) {
+                if let Some(mouse) = *old_mouse {
+                    dis.radius += (mouse - pos).y;
+                }
+                *old_mouse = Some(pos);
+                dis.radius = dis.radius.clamp(dis.min_radius, dis.max_radius)
+            }
+        }
+    }
+}
 #[derive(Component)]
+#[require(CollisionLayers::new(GameLayer::Asteroid, [GameLayer::ShipPart,GameLayer::Player,GameLayer::Bullet]),RigidBody::Kinematic)]
+
 struct ShipChamber;
 fn x(time: Res<Time>, mut t: Query<(Entity, &mut Transform), With<ShipChamber>>) {
     for mut t in t {
@@ -105,7 +146,7 @@ fn x(time: Res<Time>, mut t: Query<(Entity, &mut Transform), With<ShipChamber>>)
             let d = center - t.1.translation;
             t.1.translation += d.normalize() * time.delta_secs() * d.length().clamp(0., SHIP_SPEED);
         }
-        println!("{}", t.1.translation);
+        // println!("{}", t.1.translation);
     }
 }
 #[derive(Component)]
@@ -152,7 +193,8 @@ fn spawn_core(
         RenderAssetUsages::RENDER_WORLD,
     );
     let r = 500.;
-    let mut points = vec![[-WALL_SPACING / 2., r, 0.]];
+    let mut points = vec![[WALL_SPACING / 2., -r, 0.]];
+    let mut col_points = vec![[WALL_SPACING / 2., -r]];
     let mut vecr = vec![[0.5, 1.]];
     let mut mut_vec = vec![];
     let sve = -WALL_SPACING / 2.;
@@ -178,6 +220,7 @@ fn spawn_core(
             0.,
         ]);
         points.push([(distance) * angle.cos(), (distance) * angle.sin(), 0.]);
+        col_points.push([(distance) * angle.cos(), (distance) * angle.sin()]);
         vecr.push([
             (ROCK + 1.5) * angle.cos() + 0.5,
             (ROCK + 1.5) * angle.sin() + 0.5,
@@ -202,10 +245,17 @@ fn spawn_core(
     asteroid_shaper.insert_attribute(Mesh::ATTRIBUTE_UV_0, vecr);
 
     asteroid_shaper.insert_indices(Indices::U32(mut_vec));
-
+    println!("{:?}", col_points);
     commands.spawn((
         Mesh2d(mesh.add(asteroid_shaper)),
         ShipChamber,
+        Collider::polyline(
+            col_points
+                .into_iter()
+                .map(|x| Vec2 { x: x[0], y: x[1] })
+                .collect(),
+            None,
+        ),
         Transform {
             translation: Vec3 {
                 x: 0.,
@@ -217,6 +267,7 @@ fn spawn_core(
         MeshMaterial2d(mat.add(handle.asteroid.clone())),
     ));
 }
+
 #[derive(Resource)]
 struct eTime(Timer);
 
@@ -243,10 +294,10 @@ fn orbit_system(
         let Ok(target_transform) = transforms.get(orbit.target) else {
             continue;
         };
-        println!("{:?}", orbit.angle);
+        // println!("{:?}", orbit.angle);
 
         orbit.angle += orbit.angular_speed * time.delta_secs();
-        println!("{:?}", orbit.angle);
+        // println!("{:?}", orbit.angle);
 
         let delta = Vec2::new(orbit.angle.cos(), orbit.angle.sin()) * orbit.radius;
         let to_mouse = (target_transform.translation.xy() - transform.translation.xy()).normalize();
@@ -313,7 +364,7 @@ fn orbit_pla(
         angle,
         angular_speed: 0.0,
         min_radius: 0.,
-        max_radius: 200.,
+        max_radius: 1000.,
     });
 }
 

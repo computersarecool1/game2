@@ -1,6 +1,7 @@
+#[cfg(debug_assertions)]
+use crate::debug::DebugPlugin;
 use crate::{
-    #[cfg(debug_assertions)]
-    debug::DebugPlugin,
+    death_fx::Death_fx,
     enemy::{ImageHandles, Mob, MobHealth},
     health::{HealthEvent, update_health},
     level1::Asteroid,
@@ -9,12 +10,13 @@ use crate::{
         Level,
         LevelState::{self},
     },
-    pla::{Pla, Shoot, shoot, start},
+    pla::{Pla, Shoot, run_pla_die, shoot, start},
     score::Score,
 };
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
+mod death_fx;
 #[cfg(debug_assertions)]
 mod debug;
 mod enemy;
@@ -38,6 +40,7 @@ fn main() {
             score::ScorePlugin,
             health::HealthPlugin,
         ))
+        .add_plugins(Death_fx)
         .add_plugins(physics::physicsPlugin)
         .add_plugins((
             #[cfg(debug_assertions)]
@@ -54,8 +57,8 @@ fn main() {
                 shoot_hit,
                 despawn,
                 speed_uptime,
-                (game_over, start_de_spawn_mobs).run_if(on_message::<GameOver>),
-                (reset_speed_uptime, restart, start)
+                (run_pla_die, game_over).run_if(on_message::<GameOver>),
+                (reset_speed_uptime, start_de_spawn_mobs, restart, start)
                     .chain()
                     .run_if(on_message::<Restart>),
                 (un_game_over_ui).run_if(in_state(GameState::GameOver)),
@@ -67,6 +70,9 @@ fn main() {
         .init_resource::<ImageHandles>()
         .run();
 }
+// 1. Despawn player
+// 2. Explosion FX
+// 3. Player death message explaining cause of death
 
 #[derive(States, Clone, Debug, Default, Hash, PartialEq, Eq)]
 enum GameState {
@@ -75,8 +81,8 @@ enum GameState {
     GamePlay,
 }
 
-#[derive(Default, Message)]
-pub struct GameOver;
+#[derive(Message)]
+pub struct GameOver(Entity);
 
 #[derive(Event, Message)]
 struct Restart;

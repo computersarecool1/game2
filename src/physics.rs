@@ -21,8 +21,8 @@ fn check_player_collisions(
     player: Single<Entity, With<Pla>>,
     collisions: Collisions,
 ) {
-    if collisions.collisions_with(*player).count() != 0 {
-        mes.write_default();
+    if let Some(entity) = collisions.entities_colliding_with(*player).next() {
+        mes.write(GameOver(entity));
     }
 }
 
